@@ -6,11 +6,14 @@ using System.Text;
 
 namespace CorePDF.TypeFaces
 {
+    /// <summary>
+    /// Holds the list of fonts that are available for use in the document.
+    /// </summary>
     public static class Fonts
     {
         /// <summary>
         /// These 14 fonts are guaranteed to be supported by all PDF viewers without the need 
-        /// for embedding. As such these are the only fonts supported by the PDF generator
+        /// for embedding. As such these are the only fonts supported by the PDF generator.
         /// </summary>
         public const string FONTSANSSERIF = "Helvetica";
         public const string FONTSANSSERIFBOLD = "Helvetica-Bold";
@@ -30,6 +33,11 @@ namespace CorePDF.TypeFaces
         public const string FONTSYMBOL = "Symbol";
         public const string FONTZAPF = "ZapfDingbats";
 
+
+        /// <summary>
+        /// Enumerate the fonts that have been defined as being available for use.
+        /// </summary>
+        /// <returns></returns>
         public static List<Font> Styles()
         {
             // Details for other fonts can be found in Adobe Font Manager (afm) files. They contain all 
@@ -43,8 +51,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTSANSSERIF,
                     FontName = FONTSANSSERIF,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Metrics = new List<int> {
                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,278,278,355,556,556,889,667,
                         222,333,333,389,584,278,333,278,278,556,556,556,556,556,556,556,556,556,556,278,278, 584,584,
@@ -60,8 +66,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTSANSSERIF,
                     FontName = FONTSANSSERIFBOLD,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Bold = true,
                     Metrics = new List<int> {
                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,278,333,474,556,556,889,722,
@@ -78,8 +82,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTSANSSERIF,
                     FontName = FONTSANSSERIFBOLDITALIC,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Bold = true,
                     Italic = true,
                     Metrics = new List<int> {
@@ -97,8 +99,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTSANSSERIF,
                     FontName = FONTSANSSERIFITALIC,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Italic = true,
                     Metrics = new List<int> {
                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,278,278,355,556,556,889,667,
@@ -115,8 +115,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTSERIF,
                     FontName = FONTSERIF,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Metrics = new List<int> {
                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,250,333,408,500,500,833,778,
                         333,333,333,500,564,250,333,250,278,500,500,500,500,500,500,500,500,500,500,278,278,564,564,
@@ -132,8 +130,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTSERIF,
                     FontName = FONTSERIFBOLD,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Bold = true,
                     Metrics = new List<int> {
                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,250,333,555,500,500,1000,833,
@@ -150,8 +146,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTSERIF,
                     FontName = FONTSERIFBOLDITALIC,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Bold = true,
                     Italic = true,
                     Metrics = new List<int> {
@@ -169,8 +163,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTSERIF,
                     FontName = FONTSERIFITALIC,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Italic = true,
                     Metrics = new List<int> {
                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,250,333,420,500,500,833,778,
@@ -187,8 +179,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTFIXED,
                     FontName = FONTFIXED,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Metrics = new List<int> {
                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,600,600,600,600,600,600,600,
                         600,600,600,600,600,600,600,600,600,600,600,600,600,600,600,600,600,600,600,600,600,600,600,
@@ -204,8 +194,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTFIXED,
                     FontName = FONTFIXEDBOLD,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Bold = true,
                     Metrics = new List<int> {
                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,600,600,600,600,600,600,600,
@@ -222,8 +210,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTFIXED,
                     FontName = FONTFIXEDBOLDITALIC,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Bold = true,
                     Italic = true,
                     Metrics = new List<int> {
@@ -241,8 +227,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTFIXED,
                     FontName = FONTFIXEDITALIC,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Italic = true,
                     Metrics = new List<int> {
                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,600,600,600,600,600,600,600,
@@ -259,8 +243,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTSYMBOL,
                     FontName = FONTSYMBOL,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Metrics = new List<int> {
                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,250,333,713,500,549,833,778,
                         439,333,333,500,549,250,549,250,278,500,500,500,500,500,500,500,500,500,500,278,278,549,549,
@@ -277,8 +259,6 @@ namespace CorePDF.TypeFaces
                 {
                     BaseFont = FONTZAPF,
                     FontName = FONTZAPF,
-                    Type = "Type1",
-                    Encoding = "WinAnsiEncoding",
                     Metrics = new List<int> {
                         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,278,974,961,974,980,719,789,
                         790,791,690,960,939,549,855,911,933,911,945,974,755,846,762,761,571,677,763,760,759,754,494,

@@ -15,6 +15,9 @@ namespace CorePDF
         void Publish(StreamWriter stream);
     }
 
+    /// <summary>
+    /// The base object for the generated PDF document
+    /// </summary>
     public abstract class PDFObject : IPDFObject
     {
         protected byte[] _encodedData { get; set; }

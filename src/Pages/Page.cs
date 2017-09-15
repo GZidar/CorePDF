@@ -5,7 +5,9 @@ using System.IO;
 
 namespace CorePDF.Pages
 {
-
+    /// <summary>
+    /// Defines the content of each page in the document
+    /// </summary>
     public class Page : PDFObject
     {
         public HeaderFooter Header { get; set; }

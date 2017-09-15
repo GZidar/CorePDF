@@ -5,22 +5,45 @@ using System.Text;
 
 namespace CorePDF.Embeds
 {
+    /// <summary>
+    /// Defines the images that are going to be included in the document.
+    /// </summary>
     public class ImageFile : PDFObject
     {
         public const string FILETYPESVG = "image#2Fsvg+xml";
         public const string FILETYPEJPG = "image#2Fjpg";
         public const string FILETYPEPNG = "image#2Fpng";
 
+        /// <summary>
+        /// A fully qualified path to the image file
+        /// </summary>
         public string FilePath { get; set; }
-        public string Type { get; set; }
+
+        /// <summary>
+        /// The file type being included.
+        /// 
+        /// ONLY JPG IS Supported for now
+        /// </summary>
+        public string Type { get; set; } = FILETYPEJPG;
+
+        /// <summary>
+        /// The RBG data for the image. If a filename is provided then this field will
+        /// be calculated upon import of the files. 
+        /// </summary>
         public byte[] ByteData { get; set; }
+
+        /// <summary>
+        /// The Alpha mask of the image. Used for images that support transparancy
+        /// </summary>
         public byte[] MaskData { get; set; }
+
         /// <summary>
         /// Width of the image in pixels. This is used to apply the scale factor when
         /// Placing the image on the page. Used to ensure printed image retains proper
         /// aspect ratio.
         /// </summary>
         public int Width { get; set; }
+
         /// <summary>
         /// Height of the image in pixels. This is used to apply the scale factor when
         /// Placing the image on the page. Used to ensure printed image retains proper

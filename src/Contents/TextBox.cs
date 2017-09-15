@@ -7,13 +7,46 @@ using System.Text;
 
 namespace CorePDF.Contents
 {
+    /// <summary>
+    /// Defines any text content to be included in the PDF page
+    /// </summary>
     public class TextBox : Content
     {
+        /// <summary>
+        /// The text to be added to the document
+        /// </summary>
         public string Text { get; set; }
+
+        /// <summary>
+        /// Determines if the text is aligned to the left, right, or centre of the 
+        /// text box
+        /// </summary>
         public Alignment TextAlignment { get; set; }
+
+        /// <summary>
+        /// Specifies the font that will be used to show the text
+        /// </summary>
         public string FontFace { get; set; } = Fonts.FONTSANSSERIF;
+
+        /// <summary>
+        /// The font size in points
+        /// </summary>
         public int FontSize { get; set; } = 10;
+
+        /// <summary>
+        /// The spacing between each line of text. Will default to the fontsize if
+        /// left as zero.
+        /// </summary>
         public int LineHeight { get; set; }
+
+        /// <summary>
+        /// Specifies the color of the text. This is specified using HTML hexadecimal 
+        /// color syntax and must be 6 characters long. eg:<br /> 
+        ///     #ffffff = white, <br />
+        ///     #ff0000 is red, <br />
+        ///     #000000 = black.<br />
+        /// Will default to black if left blank.
+        /// </summary>
         public string Color { get; set; }
 
         public override void PrepareStream(Size pageSize, List<Font> fonts, bool compress)
@@ -200,6 +233,7 @@ namespace CorePDF.Contents
                 pureLine = pureLine.Replace("{{/I}}", "");
                 pureLine = pureLine.Replace("{{/BI}}", "");
 
+                // TODO: apply the formatting to properly determine the length of the line.
                 stringLength = StringLength(pureLine, FontSize, contentFont);
 
                 count++;
