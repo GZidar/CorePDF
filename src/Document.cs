@@ -9,16 +9,46 @@ using System.Text;
 
 namespace CorePDF
 {
+    /// <summary>
+    /// The document object
+    /// </summary>
     public class Document
     {
-        public Properties Properties { get; set; } = new CorePDF.Properties();
-        public Catalog Catalog { get; set; }
+        private Catalog _catalog { get; set; }
+
+        /// <summary>
+        /// Document properties
+        /// </summary>
+        public Properties Properties { get; set; } = new Properties();
+
+        /// <summary>
+        /// Page root object
+        /// </summary>
         public PageRoot PageRoot { get; set; }
-        public decimal FontSize { get; set; } = 16m;
+
+        /// <summary>
+        /// The list of fonts available for the document
+        /// </summary>
         public List<Font> Fonts { get; set; } = new List<Font>();
+
+        /// <summary>
+        /// The pages of the document
+        /// </summary>
         public List<Page> Pages { get; set; } = new List<Page>();
+
+        /// <summary>
+        /// Any headers or footers used in the document
+        /// </summary>
         public List<HeaderFooter> HeadersFooters { get; set; } = new List<HeaderFooter>();
+
+        /// <summary>
+        /// Any images used in the document
+        /// </summary>
         public List<ImageFile> Images { get; set; } = new List<ImageFile>();
+
+        /// <summary>
+        /// If the document content streams are compressed 
+        /// </summary>
         public bool CompressContent { get; set; } = false;
  
         public Document()
@@ -27,13 +57,17 @@ namespace CorePDF
             {
                 Document = this
             };
-            Catalog = new Catalog
+            _catalog = new Catalog
             {
                 Document = this
             };
             Fonts.AddRange(TypeFaces.Fonts.Styles());
         }
 
+        /// <summary>
+        /// Called to produce the document stream
+        /// </summary>
+        /// <param name="baseStream"></param>
         public void Publish(Stream baseStream)
         {
             using (StreamWriter stream = new StreamWriter(baseStream, new UTF8Encoding(false)))
@@ -51,7 +85,7 @@ namespace CorePDF
                 PrepareStreams();
 
                 // Call publish on all the child objects
-                Catalog.Publish(stream);
+                _catalog.Publish(stream);
 
                 foreach (var font in Fonts)
                 {
@@ -115,7 +149,7 @@ namespace CorePDF
             }
         }
 
-        public void PrepareStreams()
+        private void PrepareStreams()
         {
             foreach (var image in Images)
             {
@@ -137,10 +171,10 @@ namespace CorePDF
         /// This needs to be processed in the same order as the object position method below.
         /// </summary>
         /// <returns></returns>
-        public string CreateXRefTable()
+        private string CreateXRefTable()
         {
             var result = "0000000000 65535 f\n";
-            result += string.Format("{0} 00000 n\n", Catalog.BytePosition.ToString().PadLeft(10, '0'));
+            result += string.Format("{0} 00000 n\n", _catalog.BytePosition.ToString().PadLeft(10, '0'));
 
             foreach (var font in Fonts)
             {
@@ -180,7 +214,7 @@ namespace CorePDF
             return result;
         }
 
-        public int PositionObjects()
+        private int PositionObjects()
         {
             // need to sort the content elements on each page by z-Index (from 0 to n)
             // this is because the PDF renders the objects in the order they are defined
@@ -214,8 +248,8 @@ namespace CorePDF
 
             // Catalog is always the first object
             objectCount++;
-            Catalog.Id = "C1";
-            Catalog.ObjectNumber = objectCount;
+            _catalog.Id = "C1";
+            _catalog.ObjectNumber = objectCount;
 
             foreach (var font in Fonts)
             {

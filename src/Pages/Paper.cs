@@ -6,6 +6,9 @@ using System.Text;
 
 namespace CorePDF.Pages
 {
+    /// <summary>
+    /// Defines the sizes and orientation of the pages used in the document
+    /// </summary>
     public static class Paper
     {
         public static List<Size> Sizes()
@@ -59,6 +62,11 @@ namespace CorePDF.Pages
             return result;
         }
 
+        /// <summary>
+        /// Returns a specific page size from the list matching the passed in value: eg a4P
+        /// </summary>
+        /// <param name="size">the requested size</param>
+        /// <returns></returns>
         public static Size Size(string size)
         {
             return Sizes().FirstOrDefault(s => s.Name.ToLower() == size.ToLower());
