@@ -5,8 +5,14 @@ using System.Text;
 
 namespace CorePDF
 {
+    /// <summary>
+    /// The page root object of the document
+    /// </summary>
     public class PageRoot : PDFObject
     {
+        /// <summary>
+        /// A reference back up to the document
+        /// </summary>
         public Document Document { get; set; }
 
         public override void Publish(StreamWriter stream)

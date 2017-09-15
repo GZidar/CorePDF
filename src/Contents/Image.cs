@@ -6,9 +6,20 @@ using System.Text;
 
 namespace CorePDF.Contents
 {
+    /// <summary>
+    /// Image content to be shown on the page. Positions are set to be the LLC of the image
+    /// Height and Width are optional unless you wish to alter the images aspect ratio.
+    /// </summary>
     public class Image : Content
     {
+        /// <summary>
+        /// A value between 0 and 1. Used as a multiple of the source image's width and height
+        /// </summary>
         public decimal ScaleFactor { get; set; } = 1;
+
+        /// <summary>
+        /// A reference to an image that has been added to the document
+        /// </summary>
         public ImageFile ImageFile { get; set; }
 
         public override void PrepareStream(Size pageSize, List<Font> fonts, bool compress)

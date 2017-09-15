@@ -3,8 +3,14 @@ using System.IO;
 
 namespace CorePDF
 {
+    /// <summary>
+    /// The catalog object of the PDF Document
+    /// </summary>
     public class Catalog : PDFObject
     {
+        /// <summary>
+        /// A reference back to the document
+        /// </summary>
         public Document Document { get; set; }
 
         public override void Publish(StreamWriter stream)

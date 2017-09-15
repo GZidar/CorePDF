@@ -5,14 +5,41 @@ using System.Text;
 
 namespace CorePDF
 {
+    /// <summary>
+    /// Holds details of any document properties
+    /// </summary>
     public class Properties : PDFObject
     {
         private string Creator { get; set; } = "CorePDF";
+
+        /// <summary>
+        /// The document title
+        /// </summary>
         public string Title { get; set; }
+
+        /// <summary>
+        /// The subject of the document
+        /// </summary>
         public string Subject { get; set; }
+
+        /// <summary>
+        /// The author of the document
+        /// </summary>
         public string Author { get; set; }
+
+        /// <summary>
+        /// Any keywords associated with the document
+        /// </summary>
         public string Keywords { get; set; }
+
+        /// <summary>
+        /// The date the document is created
+        /// </summary>
         public DateTime? CreationDate { get; set; }
+
+        /// <summary>
+        /// The date that the document was last modified
+        /// </summary>
         public DateTime? ModifiedDate { get; set; }
 
         public override void Publish(StreamWriter stream)

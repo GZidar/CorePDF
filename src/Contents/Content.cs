@@ -16,7 +16,8 @@ namespace CorePDF.Contents
         /// block, unless it is a textbox, then this relates to the below:
         ///     - Left Aligned: Lower Left of the top line of the text box
         ///     - Centred: Mid point of the top line of the text box
-        ///     - Right Aligned: Lower Right of the top line of the tex box
+        ///     - Right Aligned: Lower Right of the top line of the text box
+        /// for an ellipses the position is the centre of the shape
         /// </summary>
         public int PosX { get; set; }
 
@@ -26,6 +27,7 @@ namespace CorePDF.Contents
         ///     - Left Aligned: Lower Left of the top line of the text box
         ///     - Centred: Mid point of the top line of the text box
         ///     - Right Aligned: Lower Right of the top line of the tex box
+        /// for an ellipses the position is the centre of the shape
         /// </summary>
         public int PosY { get; set; }
 
