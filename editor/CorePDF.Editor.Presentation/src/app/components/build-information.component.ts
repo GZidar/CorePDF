@@ -15,7 +15,7 @@ export class BuildInformationComponent implements OnInit {
 
     constructor(private buildInformationService: BuildInformationService) {
         this.model = {
-            ApplicationVersion: ""
+            applicationVersion: ""
         } as BuildInformationModel;
     }
 

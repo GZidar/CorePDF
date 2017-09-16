@@ -15,8 +15,6 @@ export class BuildInformationService {
     getBuildInformation(): any {
         const headers: Headers = new Headers({ "Content-Type": "application/json" });
         const options: RequestOptions = new RequestOptions({ headers: headers });
-        // Add a comment
-        debugger;
 
         return this.http.get(this.apiBaseUrl + "/api/information", options)
             .map(response => <BuildInformationModel>response.json());

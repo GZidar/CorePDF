@@ -296,3 +296,6 @@ dist/
 !karma.conf.js
 package-lock.json
 !systemjs.config.js
+
+# this file needs to be consistent between developer machines
+!editor/CorePDF.Editor.API/Properties/launchSettings.json

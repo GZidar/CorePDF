@@ -1,7 +1,6 @@
 ﻿export class CustomErrorModel {
-    Message: string;
-    Reason: string;
-    Action: string;
-    Number: number;
-
+    message: string;
+    reason: string;
+    action: string;
+    number: number;
 }
