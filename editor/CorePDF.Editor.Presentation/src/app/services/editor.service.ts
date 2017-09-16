@@ -19,4 +19,13 @@ export class EditorService {
         return this.http.get(this.apiBaseUrl + "/api/editor", options)
             .map(response => <EditorModel>response.json());
     }
+
+    previewDocument(documentJson: string): any {
+        const headers: Headers = new Headers({ "Content-Type": "application/json" });
+        const options: RequestOptions = new RequestOptions({ headers: headers });
+        const body = "";
+
+        return this.http.post(this.apiBaseUrl + "/api/editor", "'" + documentJson +"'", options)
+            .map(response => <EditorModel>response.json());
+    }    
 }
