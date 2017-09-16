@@ -1,0 +1,9 @@
+﻿{
+    "server": {
+        "baseDir": "src",
+        "routes": {
+            "/node_modules": "../../node_modules",
+            "/spa/app": "../../CorePDF.Editor.Presentation/src/app"
+        }
+    }
+}

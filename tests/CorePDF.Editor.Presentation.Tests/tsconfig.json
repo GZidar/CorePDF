@@ -1,0 +1,24 @@
+{
+    "compilerOptions": {
+        "noImplicitAny": false,
+        "noEmitOnError": true,
+        "removeComments": false,
+        "sourceMap": true,
+        "target": "es5",
+        "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
+        "declaration": false,
+        "module": "commonjs",
+        "moduleResolution": "node",
+        "allowJs": false,
+        "baseUrl": "./",
+        "paths": {
+            "@spa/app*": [ "../../TSP.Presentation/src/app*" ],
+            "@angular*": [ "../../node_modules/@angular*" ]
+        }
+    },
+    "include": [
+        "src/specs/**/*.ts"
+    ],
+    "compileOnSave": true
+}

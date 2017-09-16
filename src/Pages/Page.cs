@@ -10,17 +10,41 @@ namespace CorePDF.Pages
     /// </summary>
     public class Page : PDFObject
     {
+        private Size _pageSize { get; set; }
+
+        /// <summary>
+        /// The header (if any) that this page uses (taken from the set defined in the document)
+        /// </summary>
         public HeaderFooter Header { get; set; }
+
+        /// <summary>
+        /// The footer (if any) that this page uses (taken from the set defined in the document)
+        /// </summary>
         public HeaderFooter Footer { get; set; }
-        public Size PageSize { get; set; }
+
+        /// <summary>
+        /// The paper size to use for this page
+        /// </summary>
+        public string PageSize { get; set; } = Paper.PAGEA4PORTRAIT;
+
+        /// <summary>
+        /// The document page root. This value is set from the document object
+        /// </summary>
         public PageRoot PageRoot { get; set; }
+
+        /// <summary>
+        /// Any content that is to be shown on the page
+        /// </summary>
         public List<Content> Contents { get; set; } = new List<Content>();
 
         public void PrepareStream(List<Font> documentFonts, bool compress = false)
         {
+            // Get the details of the paper that matches the requested size
+            _pageSize = Paper.Size(PageSize);
+
             foreach (var content in Contents)
             {
-                content.PrepareStream(PageSize, documentFonts, compress);
+                content.PrepareStream(_pageSize, documentFonts, compress);
             }
         }
 
@@ -85,7 +109,7 @@ namespace CorePDF.Pages
             {
                 { "/Type", "/Page" },
                 { "/Parent", string.Format("{0} 0 R", PageRoot.ObjectNumber)},
-                { "/MediaBox", string.Format("[0 0 {0} {1}]", PageSize.ContentWidth, PageSize.ContentHeight)},
+                { "/MediaBox", string.Format("[0 0 {0} {1}]", _pageSize.ContentWidth, _pageSize.ContentHeight)},
                 { "/Resources", resources },
                 { "/Contents", contentRefs}
             };

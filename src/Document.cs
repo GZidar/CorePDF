@@ -14,22 +14,14 @@ namespace CorePDF
     /// </summary>
     public class Document
     {
-        private Catalog _catalog { get; set; }
+        private Catalog _catalog { get; set; } = new Catalog();
+        private PageRoot _pageRoot { get; set; }
+        private List<Font> _fonts { get; set; } = new List<Font>();
 
         /// <summary>
         /// Document properties
         /// </summary>
         public Properties Properties { get; set; } = new Properties();
-
-        /// <summary>
-        /// Page root object
-        /// </summary>
-        public PageRoot PageRoot { get; set; }
-
-        /// <summary>
-        /// The list of fonts available for the document
-        /// </summary>
-        public List<Font> Fonts { get; set; } = new List<Font>();
 
         /// <summary>
         /// The pages of the document
@@ -53,15 +45,11 @@ namespace CorePDF
  
         public Document()
         {
-            PageRoot = new PageRoot
+            _pageRoot = new PageRoot
             {
                 Document = this
             };
-            _catalog = new Catalog
-            {
-                Document = this
-            };
-            Fonts.AddRange(TypeFaces.Fonts.Styles());
+            _fonts.AddRange(Fonts.Styles());
         }
 
         /// <summary>
@@ -85,9 +73,9 @@ namespace CorePDF
                 PrepareStreams();
 
                 // Call publish on all the child objects
-                _catalog.Publish(stream);
+                _catalog.Publish(_pageRoot, stream);
 
-                foreach (var font in Fonts)
+                foreach (var font in _fonts)
                 {
                     font.Publish(stream);
                 }
@@ -97,7 +85,7 @@ namespace CorePDF
                     image.Publish(stream);
                 }
 
-                PageRoot.Publish(stream);
+                _pageRoot.Publish(stream);
 
                 foreach (var headerFooter in HeadersFooters)
                 {
@@ -114,7 +102,7 @@ namespace CorePDF
 
                 foreach (var page in Pages)
                 {
-                    page.Publish(Fonts, stream);
+                    page.Publish(_fonts, stream);
                 }
 
                 //// Document attributes
@@ -158,12 +146,12 @@ namespace CorePDF
 
             foreach (var headerfooter in HeadersFooters)
             {
-                 headerfooter.PrepareStream(Fonts, CompressContent);
+                 headerfooter.PrepareStream(_fonts, CompressContent);
             }
 
             foreach (var page in Pages)
             {
-                page.PrepareStream(Fonts, CompressContent);
+                page.PrepareStream(_fonts, CompressContent);
             }
         }
 
@@ -176,7 +164,7 @@ namespace CorePDF
             var result = "0000000000 65535 f\n";
             result += string.Format("{0} 00000 n\n", _catalog.BytePosition.ToString().PadLeft(10, '0'));
 
-            foreach (var font in Fonts)
+            foreach (var font in _fonts)
             {
                 result += string.Format("{0} 00000 n\n", font.BytePosition.ToString().PadLeft(10, '0'));
             }
@@ -186,7 +174,7 @@ namespace CorePDF
                 result += string.Format("{0} 00000 n\n", image.BytePosition.ToString().PadLeft(10, '0'));
             }
 
-            result += string.Format("{0} 00000 n\n", PageRoot.BytePosition.ToString().PadLeft(10, '0'));
+            result += string.Format("{0} 00000 n\n", _pageRoot.BytePosition.ToString().PadLeft(10, '0'));
 
             foreach (var headerfooter in HeadersFooters)
             {
@@ -251,7 +239,7 @@ namespace CorePDF
             _catalog.Id = "C1";
             _catalog.ObjectNumber = objectCount;
 
-            foreach (var font in Fonts)
+            foreach (var font in _fonts)
             {
                 fontCount++;
                 objectCount++;
@@ -269,8 +257,8 @@ namespace CorePDF
 
             // Allow for the parent page
             objectCount++;
-            PageRoot.Id = "R1";
-            PageRoot.ObjectNumber = objectCount;
+            _pageRoot.Id = "R1";
+            _pageRoot.ObjectNumber = objectCount;
 
             // The header and footer content
             foreach (var headerfooter in HeadersFooters)
@@ -288,7 +276,7 @@ namespace CorePDF
             foreach (var page in Pages)
             {
                 // Attach the page root to each page
-                page.PageRoot = PageRoot;
+                page.PageRoot = _pageRoot;
 
                 foreach (var content in page.Contents)
                 {
