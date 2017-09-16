@@ -1,0 +1,23 @@
+﻿<div class="page">
+    <div *ngIf="false">
+        <h1 style="color: red;">If you can read this you are in the wrong place</h1>
+        <p>
+            This page has not been launched using the correct website address. Please close your browser and
+            reconnect to the site using the correct address.
+        </p>
+    </div>
+
+    <form [formGroup]="pageForm" autocomplete="off">
+        <div class="controls">
+            <button type="button" (click)="newDocument($event)"><span class="fa fa-plus" aria-hidden="true"></span>New Document</button>
+            <button type="button" (click)="previewDocument($event)"><span class="fa fa-file-pdf-o" aria-hidden="true"></span>Preview</button>
+        </div>
+        <div class="editregion">
+            <textarea formControlName="DocumentJSON" id="documentData" name="documentData" autofocus="autofocus"></textarea>
+        </div>
+    </form>
+
+    <div class="preview">
+        <iframe [src]="pdf"></iframe>
+    </div>
+</div>

@@ -1,0 +1,46 @@
+{
+  "$schema": "./node_modules/@angular/cli/lib/config/schema.json",
+  "project": {
+    "name": "tsp"
+  },
+  "apps": [
+    {
+      "root": "editor/CorePDF.Editor.Presentation/src",
+      "outDir": "editor/CorePDF.Editor.Presentation/dist",
+      "assets": [
+        "assets",
+        "favicon.ico"
+      ],
+      "styles": [
+        "app/css/font-awesome.min.css"
+      ],
+      "index": "index.html",
+      "main": "main.ts",
+      "polyfills": "polyfills.ts",
+      "test": "../../../Tests/CorePDF.Editor.Presentation.Tests/src/test.ts",
+      "tsconfig": "tsconfig.json",
+      "testTsconfig": "../../../Tests/CorePDF.Editor.Presentation.Tests/tsconfig.json",
+      "prefix": "app",
+      "scripts": [],
+      "environmentSource": "environments/environment.ts",
+      "environments": {
+        "dev": "environments/environment.ts",
+        "prod": "environments/environment.prod.ts"
+      }
+    }
+  ],
+  "lint": [
+    {
+      "project": "editor/CorePDF.Editor.Presentation/src/tsconfig.app.json"
+    }
+  ],
+  "test": {
+    "karma": {
+      "config": "./karma.conf.js"
+    }
+  },
+  "defaults": {
+    "styleExt": "less",
+    "component": {}
+  }
+}

@@ -34,7 +34,7 @@ namespace CorePDF.IntegrationTests
             _sut = new Document();
             _sut.Pages.Add(new Page
             {
-                PageSize = Paper.Size("a4P"),
+                PageSize = Paper.PAGEA4PORTRAIT,
                 Contents = new List<Content>()
                 {
                     new TextBox

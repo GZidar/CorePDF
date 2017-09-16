@@ -11,6 +11,13 @@ namespace CorePDF.Pages
     /// </summary>
     public class HeaderFooter : PDFObject
     {
+        private Size _pageSize { get; set; } = Paper.Size("a4P");
+
+        /// <summary>
+        /// The name of the Header or footer. Used by the pages to reference this definition
+        /// </summary>
+        public string Name { get; set; }
+
         /// <summary>
         /// The various content elements that form the header or footer. 
         /// </summary>
@@ -19,13 +26,16 @@ namespace CorePDF.Pages
         /// <summary>
         /// The page size and orientation that this header or footer applies to.
         /// </summary>
-        public Size PageSize { get; set; } = Paper.Size("a4P");
+        public string PageSize { get; set; } = Paper.PAGEA4PORTRAIT;
 
-        public void PrepareStream(List<Font> fonts, bool compress = false)
+        public void PrepareStream(PageRoot pageRoot, List<Font> fonts, bool compress = false)
         {
+            // Get the details of the paper that matches the requested size
+            _pageSize = Paper.Size(PageSize);
+
             foreach (var content in Contents)
             {
-                content.PrepareStream(PageSize, fonts, compress);
+                content.PrepareStream(pageRoot, _pageSize, fonts, compress);
             }
         }
 

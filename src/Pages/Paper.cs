@@ -11,6 +11,14 @@ namespace CorePDF.Pages
     /// </summary>
     public static class Paper
     {
+        // The list of currently defined paper sizes
+        public const string PAGEA4PORTRAIT = "a4P";
+        public const string PAGEA4LANDSCAPE = "a4L";
+        public const string PAGEA3PORTRAIT = "a3P";
+        public const string PAGEA3LANDSCAPE = "a3L";
+        public const string PAGEA5PORTRAIT = "a5P";
+        public const string PAGEA5LANDSCAPE = "a5L";
+
         public static List<Size> Sizes()
         {
             var result = new List<Size>()

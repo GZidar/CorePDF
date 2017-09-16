@@ -49,7 +49,7 @@ namespace CorePDF.Contents
         /// </summary>
         public string Color { get; set; }
 
-        public override void PrepareStream(Size pageSize, List<Font> fonts, bool compress)
+        public override void PrepareStream(PageRoot pageRoot, Size pageSize, List<Font> fonts, bool compress)
         {
             var result = "";
             var contentFont = fonts.Find(f => f.FontName == FontFace);

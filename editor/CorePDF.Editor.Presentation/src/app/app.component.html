@@ -1,0 +1,9 @@
+<div id="screen">
+    <div id="container">
+        <router-outlet></router-outlet>
+    </div>
+    
+    <a (click)="scrollToTop()" tabindex="0" aria-label="End of page tap to go back to top of the screen" id="top"></a>
+
+    <build-information-component id="build-info"></build-information-component>
+</div>

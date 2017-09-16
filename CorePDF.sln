@@ -1,13 +1,33 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26730.15
+VisualStudioVersion = 15.0.26906.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CorePDF", "src\CorePDF.csproj", "{502ECB2C-72D9-4237-A053-7EE20D2299CA}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CorePDF.UnitTests", "tests\CorePDF.UnitTests\CorePDF.UnitTests.csproj", "{DC002F5C-1AC8-41A4-A886-9CE0B4C29505}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CorePDF.UnitTests", "tests\CorePDF.UnitTests\CorePDF.UnitTests.csproj", "{DC002F5C-1AC8-41A4-A886-9CE0B4C29505}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CorePDF.IntegrationTests", "tests\CorePDF.IntegrationTests\CorePDF.IntegrationTests.csproj", "{241429FE-011A-4E79-B23D-37B45BCE1694}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CorePDF.IntegrationTests", "tests\CorePDF.IntegrationTests\CorePDF.IntegrationTests.csproj", "{241429FE-011A-4E79-B23D-37B45BCE1694}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CorePDF.Editor.API", "editor\CorePDF.Editor.API\CorePDF.Editor.API.csproj", "{133FE92C-CE32-4CAE-B86C-2BE48F973951}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CorePDF.Editor.Presentation", "editor\CorePDF.Editor.Presentation\CorePDF.Editor.Presentation.csproj", "{FFCF2E1B-8FE1-436D-A20A-5B35678DCA67}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{92C4B544-C183-492A-8EEE-9BFA20BB55C0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Editor", "Editor", "{F019199F-72DF-452B-ACDE-92BED9876CA3}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CorePDF.Editor.Presentation.Tests", "tests\CorePDF.Editor.Presentation.Tests\CorePDF.Editor.Presentation.Tests.csproj", "{57635146-C98F-4C98-AC0D-6D92596C4257}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{1E25CDBC-0D83-4C3C-9F25-8AB1335D8527}"
+	ProjectSection(SolutionItems) = preProject
+		.angular-cli.json = .angular-cli.json
+		.gitignore = .gitignore
+		gruntfile.js = gruntfile.js
+		karma.conf.js = karma.conf.js
+		package.json = package.json
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,9 +47,28 @@ Global
 		{241429FE-011A-4E79-B23D-37B45BCE1694}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{241429FE-011A-4E79-B23D-37B45BCE1694}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{241429FE-011A-4E79-B23D-37B45BCE1694}.Release|Any CPU.Build.0 = Release|Any CPU
+		{133FE92C-CE32-4CAE-B86C-2BE48F973951}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{133FE92C-CE32-4CAE-B86C-2BE48F973951}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{133FE92C-CE32-4CAE-B86C-2BE48F973951}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{133FE92C-CE32-4CAE-B86C-2BE48F973951}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FFCF2E1B-8FE1-436D-A20A-5B35678DCA67}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FFCF2E1B-8FE1-436D-A20A-5B35678DCA67}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FFCF2E1B-8FE1-436D-A20A-5B35678DCA67}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FFCF2E1B-8FE1-436D-A20A-5B35678DCA67}.Release|Any CPU.Build.0 = Release|Any CPU
+		{57635146-C98F-4C98-AC0D-6D92596C4257}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{57635146-C98F-4C98-AC0D-6D92596C4257}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{57635146-C98F-4C98-AC0D-6D92596C4257}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{57635146-C98F-4C98-AC0D-6D92596C4257}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{DC002F5C-1AC8-41A4-A886-9CE0B4C29505} = {92C4B544-C183-492A-8EEE-9BFA20BB55C0}
+		{241429FE-011A-4E79-B23D-37B45BCE1694} = {92C4B544-C183-492A-8EEE-9BFA20BB55C0}
+		{133FE92C-CE32-4CAE-B86C-2BE48F973951} = {F019199F-72DF-452B-ACDE-92BED9876CA3}
+		{FFCF2E1B-8FE1-436D-A20A-5B35678DCA67} = {F019199F-72DF-452B-ACDE-92BED9876CA3}
+		{57635146-C98F-4C98-AC0D-6D92596C4257} = {92C4B544-C183-492A-8EEE-9BFA20BB55C0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D92267D5-81D6-40E4-B346-32813EDBC1D9}

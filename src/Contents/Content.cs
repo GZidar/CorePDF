@@ -47,7 +47,7 @@ namespace CorePDF.Contents
         /// </summary>
         public int Height { get; set; } = 0;
 
-        public virtual void PrepareStream(Size pageSize, List<Font> fonts, bool compress)
+        public virtual void PrepareStream(PageRoot pageRoot, Size pageSize, List<Font> fonts, bool compress)
         {
             base.PrepareStream(compress);
         }
