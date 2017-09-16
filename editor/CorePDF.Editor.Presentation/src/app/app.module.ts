@@ -13,8 +13,6 @@ import { BuildInformationService } from "@spa/app/services/build-information.ser
 import { ApplicationInsightsService } from "@spa/app/services/application-insights.service";
 import { EditorService } from "@spa/app/services/editor.service";
 
-import { SafePipe } from "@spa/app/pipes/safeurl.pipe";
-
 //Components
 import { EditorComponent } from "@spa/app/components/editor.component";
 import { BuildInformationComponent } from "@spa/app/components/build-information.component";
@@ -23,8 +21,7 @@ import { BuildInformationComponent } from "@spa/app/components/build-information
     declarations: [
         AppComponent,
         EditorComponent,
-        BuildInformationComponent,
-        SafePipe
+        BuildInformationComponent
     ],
     imports: [
         BrowserModule,

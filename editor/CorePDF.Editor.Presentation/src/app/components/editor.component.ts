@@ -7,7 +7,6 @@ import { DomSanitizer, SafeHtml, SafeStyle, SafeScript, SafeUrl, SafeResourceUrl
 
 import { EditorModel } from "@spa/app/models/editor.model";
 import { PdfModel } from "@spa/app/models/pdf.model";
-import { SafePipe } from "@spa/app/pipes/safeurl.pipe";
 
 import { ApplicationInsightsService } from "@spa/app/services/application-insights.service";
 import { EditorService } from "@spa/app/services/editor.service";
@@ -21,7 +20,6 @@ import { EditorService } from "@spa/app/services/editor.service";
 export class EditorComponent implements OnInit {
     pageForm: FormGroup;
     submitted = false;
-    temp: string;
     pdf: SafeResourceUrl;
 
     constructor(
@@ -31,7 +29,7 @@ export class EditorComponent implements OnInit {
         private _sanitizer: DomSanitizer,
         private _fb: FormBuilder
     ) {
-        this.pdf = this._sanitizer.bypassSecurityTrustResourceUrl("http://infolab.stanford.edu/pub/papers/google.pdf");        
+        this.pdf = this._sanitizer.bypassSecurityTrustResourceUrl("assets/sample.pdf");        
     }
 
     ngOnInit(): void {
@@ -54,9 +52,9 @@ export class EditorComponent implements OnInit {
                 response => {
                     this.submitted = false;
                     if (response != null && response != undefined) {
-                        const model = response as EditorModel;
-                        this.temp = model.documentData;
-                        this.pageForm.controls["DocumentJSON"].setValue(model.documentData);
+                        const json = JSON.parse(response.documentData);
+                        const pipe = new JsonPipe();
+                        this.pageForm.controls["DocumentJSON"].setValue(pipe.transform(json));
                     }
                 },
                 error => {

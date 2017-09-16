@@ -37,7 +37,7 @@ namespace CorePDF.Contents
         /// </summary>
         public int BorderRadius { get; set; } = 0;
 
-        public override void PrepareStream(Size pageSize, List<Font> fonts, bool compress)
+        public override void PrepareStream(PageRoot pageRoot, Size pageSize, List<Font> fonts, bool compress)
         {
             var roundedness = 0.55191502449m; // mathematical constant for bezier curve calculations to create a circle
 

@@ -15,12 +15,12 @@ namespace CorePDF.Pages
         /// <summary>
         /// The header (if any) that this page uses (taken from the set defined in the document)
         /// </summary>
-        public HeaderFooter Header { get; set; }
+        public string HeaderName { get; set; }
 
         /// <summary>
         /// The footer (if any) that this page uses (taken from the set defined in the document)
         /// </summary>
-        public HeaderFooter Footer { get; set; }
+        public string FooterName { get; set; }
 
         /// <summary>
         /// The paper size to use for this page
@@ -44,7 +44,7 @@ namespace CorePDF.Pages
 
             foreach (var content in Contents)
             {
-                content.PrepareStream(_pageSize, documentFonts, compress);
+                content.PrepareStream(PageRoot, _pageSize, documentFonts, compress);
             }
         }
 
@@ -59,37 +59,54 @@ namespace CorePDF.Pages
             // content can be found on the page and in any associated header or footer
             var contentRefs = "[ ";
             var xobjects = new Dictionary<string, string>();
-            if (Header != null)
+            var header = PageRoot.Document.GetHeaderFooter(HeaderName);
+
+            if (header != null)
             {
-                foreach (var content in Header.Contents)
+                foreach (var content in header.Contents)
                 {
                     contentRefs += string.Format("{0} 0 R ", content.ObjectNumber);
 
                     if (content is Image)
                     {
-                        xobjects.Add("/" + ((Image)content).ImageFile.Id, string.Format("{0} 0 R", ((Image)content).ImageFile.ObjectNumber));
+                        var imageFile = PageRoot.Document.GetImage(((Image)content).ImageName);
+                        if (imageFile != null)
+                        {
+                            xobjects.Add("/" + imageFile.Id, string.Format("{0} 0 R", imageFile.ObjectNumber));
+                        }
                     }
                 }
             }
-            if (Footer != null)
+
+            var footer = PageRoot.Document.GetHeaderFooter(FooterName);
+            if (footer != null)
             {
-                foreach (var content in Footer.Contents)
+                foreach (var content in footer.Contents)
                 {
                     contentRefs += string.Format("{0} 0 R ", content.ObjectNumber);
 
                     if (content is Image)
                     {
-                        xobjects.Add("/" + ((Image)content).ImageFile.Id, string.Format("{0} 0 R", ((Image)content).ImageFile.ObjectNumber));
+                        var imageFile = PageRoot.Document.GetImage(((Image)content).ImageName);
+                        if (imageFile != null)
+                        {
+                            xobjects.Add("/" + imageFile.Id, string.Format("{0} 0 R", imageFile.ObjectNumber));
+                        }
                     }
                 }
             }
+
             foreach (var content in Contents)
             {
                 contentRefs += string.Format("{0} 0 R ", content.ObjectNumber);
 
                 if (content is Image)
                 {
-                    xobjects.Add("/" + ((Image)content).ImageFile.Id, string.Format("{0} 0 R", ((Image)content).ImageFile.ObjectNumber));
+                    var imageFile = PageRoot.Document.GetImage(((Image)content).ImageName);
+                    if (imageFile != null)
+                    {
+                        xobjects.Add("/" + imageFile.Id, string.Format("{0} 0 R", imageFile.ObjectNumber));
+                    }
                 }
             }
             contentRefs += "]";

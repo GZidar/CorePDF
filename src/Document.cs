@@ -137,6 +137,20 @@ namespace CorePDF
             }
         }
 
+        public HeaderFooter GetHeaderFooter(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+
+            return HeadersFooters.Find(hf => hf.Name.ToLower() == name.ToLower());
+        }
+
+        public ImageFile GetImage(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+
+            return Images.Find(i => i.Name.ToLower() == name.ToLower());
+        }
+
         private void PrepareStreams()
         {
             foreach (var image in Images)
@@ -146,7 +160,7 @@ namespace CorePDF
 
             foreach (var headerfooter in HeadersFooters)
             {
-                 headerfooter.PrepareStream(_fonts, CompressContent);
+                 headerfooter.PrepareStream(_pageRoot, _fonts, CompressContent);
             }
 
             foreach (var page in Pages)

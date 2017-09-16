@@ -5,6 +5,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Newtonsoft.Json" Version="10.0.1" />
     <PackageReference Include="SharpZipLib.NETStandard" Version="0.86.0.1" />
   </ItemGroup>
 

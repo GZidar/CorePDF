@@ -15,6 +15,11 @@ namespace CorePDF.Embeds
         public const string FILETYPEPNG = "image#2Fpng";
 
         /// <summary>
+        /// The name used to reference this image in the document content
+        /// </summary>
+        public string Name { get; set; }
+
+        /// <summary>
         /// A fully qualified path to the image file
         /// </summary>
         public string FilePath { get; set; }
@@ -53,7 +58,7 @@ namespace CorePDF.Embeds
 
         public override void PrepareStream(bool compress = false)
         {
-            if (ByteData == null || ByteData.Length == 0)
+            if ((ByteData == null || ByteData.Length == 0) && !string.IsNullOrEmpty(FilePath) && File.Exists(FilePath))
             {
                 using (var fileStream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
                 {

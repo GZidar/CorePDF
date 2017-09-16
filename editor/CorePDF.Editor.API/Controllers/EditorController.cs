@@ -11,6 +11,11 @@ namespace CorePDF.Editor.API.Controllers
     [Route("api/[controller]")]
     public class EditorController : Controller
     {
+        private JsonSerializerSettings _settings = new JsonSerializerSettings
+        {
+            TypeNameHandling = TypeNameHandling.Objects
+        };
+
         // GET api/editor
         [HttpGet]
         public IActionResult Get()
@@ -20,59 +25,62 @@ namespace CorePDF.Editor.API.Controllers
             result.Properties.Author = "your name";
             result.Properties.CreationDate = DateTime.Now;
 
-            result.Pages.Add(new Page
+            result.HeadersFooters = new List<HeaderFooter>()
             {
-                PageSize = Paper.PAGEA4PORTRAIT,
-                Contents = new List<Content>()
+                new HeaderFooter()
                 {
-                    new TextBox
+                    Name = "header-001",
+                    Contents = new List<Content>()
                     {
-                        Text = "This is a test document",
-                        FontSize = 30,
-                        PosX = 250,
-                        PosY = 400,
-                        TextAlignment = Alignment.Center
-                    },
-                    new Shape
+                        new TextBox()
+                    }
+                },
+                new HeaderFooter()
+                {
+                    Name = "footer-001",
+                    Contents = new List<Content>()
                     {
-                        Type = Polygon.Rectangle,
-                        PosX = 200,
-                        PosY = 200,
-                        Height = 300,
-                        Width = 300,
-                        FillColor = "#ffffff",
-                        ZIndex = 0
-                    },
-                    new Shape
-                    {
-                        Type = Polygon.Ellipses,
-                        PosX = 350,
-                        PosY = 350,
-                        Stroke = new Stroke
+                        new Shape()
                         {
-                            Color = "#ff0000"
-                        },
-                        Height = 500,
-                        Width = 300,
-                        ZIndex = 10
+                            Type = Polygon.Line
+                        }
                     }
                 }
-            });
+            };
 
-            return new JsonResult(new { documentData = JsonConvert.SerializeObject(result) });
+            result.Pages = new List<Page>()
+            {
+                new Page()
+                {
+                    HeaderName = "header-001",
+                    FooterName = "footer-001",
+                    Contents = new List<Content>()
+                    {
+                        new Image()
+                    }
+                }
+            };
+
+            result.Images = new List<Embeds.ImageFile>()
+            {
+                new Embeds.ImageFile()
+            };
+
+            return new JsonResult(new { documentData = JsonConvert.SerializeObject(result, _settings) });
         }
 
         // POST api/editor
         [HttpPost]
         public IActionResult Post([FromBody]string documentData = "")
         {
-            var document = JsonConvert.DeserializeObject<Document>(documentData);
+            var document = JsonConvert.DeserializeObject<Document>(documentData, _settings);
 
             using (var memstream = new MemoryStream())
             {
                 document.Publish(memstream);
                 var result = Convert.ToBase64String(memstream.ToArray());
 
+                Response.ContentType = "application/pdf";
                 return new JsonResult(new { pdf = result });
             }
         }

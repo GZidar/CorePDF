@@ -20,10 +20,13 @@ namespace CorePDF.Contents
         /// <summary>
         /// A reference to an image that has been added to the document
         /// </summary>
-        public ImageFile ImageFile { get; set; }
+        public string ImageName { get; set; }
 
-        public override void PrepareStream(Size pageSize, List<Font> fonts, bool compress)
+        public override void PrepareStream(PageRoot pageRoot, Size pageSize, List<Font> fonts, bool compress)
         {
+            var imageFile = pageRoot.Document.GetImage(ImageName);
+            if (imageFile == null) return;
+
             var result = "q\n";
             if (Height > 0 && Width > 0)
             {
@@ -33,9 +36,9 @@ namespace CorePDF.Contents
             else
             {
                 // calculate the dimensions based on the source image height and width and the scale factor
-                result += string.Format("{0} 0 0 {1} {2} {3} cm\n", ImageFile.Width * ScaleFactor, ImageFile.Height * ScaleFactor, PosX, PosY);
+                result += string.Format("{0} 0 0 {1} {2} {3} cm\n", imageFile.Width * ScaleFactor, imageFile.Height * ScaleFactor, PosX, PosY);
             }
-            result += string.Format("/{0} Do\n", ImageFile.Id);
+            result += string.Format("/{0} Do\n", imageFile.Id);
             result += "Q\n";
 
             _encodedData = Encoding.UTF8.GetBytes(result);
