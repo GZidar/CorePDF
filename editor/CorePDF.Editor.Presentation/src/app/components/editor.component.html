@@ -7,5 +7,17 @@
         </p>
     </div>
 
-    If you can see this then it's working
+    <form [formGroup]="pageForm" autocomplete="off">
+        <div class="controls">
+            <button type="button" (click)="newDocument($event)"><span class="fa fa-new"></span>New Document</button>
+            <button type="button" (click)="newDocument($event)"><span class="fa fa-new"></span>Preview</button>
+        </div>
+        <div class="editregion">
+            <textarea formControlName="DocumentJSON" id="documentData" name="documentData" autofocus="autofocus"></textarea>
+        </div>
+    </form>
+
+    <div class="preview">
+        <iframe src="https://research.google.com/pubs/archive/44678.pdf"></iframe>
+    </div>
 </div>

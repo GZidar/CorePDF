@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
+using Newtonsoft.Json;
 
 namespace CorePDF.Editor.API.Controllers
 {
@@ -15,7 +16,7 @@ namespace CorePDF.Editor.API.Controllers
             result.Properties.Author = "your name";
             result.Properties.CreationDate = DateTime.Now;
 
-            return new JsonResult(result);
+            return new JsonResult(new { documentData = JsonConvert.SerializeObject(result) });
         }
 
         // POST api/editor
