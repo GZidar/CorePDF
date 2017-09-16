@@ -3,7 +3,7 @@ import { FormBuilder, FormControl, FormGroup, Validators } from "@angular/forms"
 import { Router } from "@angular/router";
 import { Response } from "@angular/http";
 
-//import { LoginService } from "@spa/app/service/login.service";
+import { ApplicationInsightsService } from '@spa/app/services/application-insights.service';
 
 @Component({
     moduleId: module.id,
@@ -15,15 +15,14 @@ export class EditorComponent implements OnInit {
     submitted = false;
 
     constructor(
-        //public loginService: LoginService,
-
-        protected _router: Router,
-        private fb: FormBuilder,
+        private _appInsightsService: ApplicationInsightsService,
+        private _router: Router,
+        private _fb: FormBuilder,
     ) {
-
     }
 
     ngOnInit(): void {
+        this._appInsightsService.trackPageView();
     }
 
     submitForm(event): void {
