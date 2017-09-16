@@ -136,14 +136,14 @@ module.exports = function (grunt) {
             },
             jasmineUI: {
                 command: [
-                    'cd Tests/TSP.Presentation.Tests',
+                    'cd Tests/CorePDF.Editor.Presentation.Tests',
                     'tsc',
                     '"../../node_modules/.bin/lite-server" -c=bs-config.json'
                 ].join(' && ')
             },
             karma: {
                 command: [
-                    'cd Tests/TSP.Presentation.Tests',
+                    'cd Tests/CorePDF.Editor.Presentation.Tests',
                     'tsc',
                     'cd ../..',
                     '"node_modules/.bin/karma" start --single-run'

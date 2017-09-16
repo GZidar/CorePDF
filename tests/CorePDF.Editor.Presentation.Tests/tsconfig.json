@@ -13,7 +13,7 @@
         "allowJs": false,
         "baseUrl": "./",
         "paths": {
-            "@spa/app*": [ "../../TSP.Presentation/src/app*" ],
+            "@spa/app*": [ "../../editor/CorePDF.Editor.Presentation/src/app*" ],
             "@angular*": [ "../../node_modules/@angular*" ]
         }
     },

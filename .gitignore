@@ -292,6 +292,7 @@ fonts/
 dist/
 *.css
 *.js
+*.js.map
 ![Gg]runtfile.js
 !karma.conf.js
 package-lock.json
