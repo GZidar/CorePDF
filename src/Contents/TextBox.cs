@@ -51,6 +51,9 @@ namespace CorePDF.Contents
 
         public override void PrepareStream(PageRoot pageRoot, Size pageSize, List<Font> fonts, bool compress)
         {
+            // don't do anything of there is no text
+            if (string.IsNullOrEmpty(Text)) return;
+
             var result = "";
             var contentFont = fonts.Find(f => f.FontName == FontFace);
 

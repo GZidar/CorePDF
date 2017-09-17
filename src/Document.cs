@@ -267,6 +267,20 @@ namespace CorePDF
                 objectCount++;
                 image.Id = string.Format("I{0}", imageCount);
                 image.ObjectNumber = objectCount;
+
+                if (image.Type == ImageFile.FILETYPEPNG)
+                {
+                    // add the mask object here
+                    image.MaskData = new ImageFile
+                    {
+                        Type = ImageFile.IMAGESMASK
+                    };
+
+                    imageCount++;
+                    objectCount++;
+                    image.MaskData.Id = string.Format("I{0}", imageCount);
+                    image.MaskData.ObjectNumber = objectCount;
+                }
             }
 
             // Allow for the parent page

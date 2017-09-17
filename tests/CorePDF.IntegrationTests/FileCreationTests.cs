@@ -1,8 +1,11 @@
 using CorePDF.Contents;
 using CorePDF.Pages;
+using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Text;
 using Xunit;
 
 namespace CorePDF.IntegrationTests
@@ -27,16 +30,49 @@ namespace CorePDF.IntegrationTests
             }
         }
 
+
         [Fact]
         public void CreatePDF_ExpectFileCreated()
         {
             // Arrange
             _sut = new Document();
+
+            _sut.Images = new List<Embeds.ImageFile>
+            {
+                new Embeds.ImageFile
+                {
+                    Name = "logo",
+                    FilePath = "smiley.jpg",
+                    Type = Embeds.ImageFile.FILETYPEJPG,
+                    Height = 299,
+                    Width = 299
+                },
+                new Embeds.ImageFile
+                {
+                    Name = "sample",
+                    FilePath = "sample.png",
+                    Type = Embeds.ImageFile.FILETYPEPNG
+                }
+            };
+
             _sut.Pages.Add(new Page
             {
                 PageSize = Paper.PAGEA4PORTRAIT,
                 Contents = new List<Content>()
                 {
+                    new Image
+                    {
+                        ImageName = "sample",
+                        PosX = 400,
+                        PosY = 500
+                    },
+                    new Image
+                    {
+                        ScaleFactor = 0.1m,
+                        ImageName = "logo",
+                        PosX = 200,
+                        PosY = 500
+                    },
                     new TextBox
                     {
                         Text = "This is a test document",
