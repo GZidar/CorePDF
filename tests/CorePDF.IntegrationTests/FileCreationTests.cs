@@ -44,16 +44,14 @@ namespace CorePDF.IntegrationTests
                     Name = "smiley",
                     FilePath = "smiley.jpg",
                     Type = Embeds.ImageFile.FILETYPEJPG,
-                    Height = 3,
-                    Width = 3
+                    Height = 299,
+                    Width = 299
                 },
                 new Embeds.ImageFile
                 {
                     Name = "sample",
                     FilePath = "sample.png",
-                    Type = Embeds.ImageFile.FILETYPEPNG,
-                    Height = 3,
-                    Width = 3
+                    Type = Embeds.ImageFile.FILETYPEPNG
                 },
                 new Embeds.ImageFile
                 {
