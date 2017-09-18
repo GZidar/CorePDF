@@ -52,7 +52,13 @@ namespace CorePDF.IntegrationTests
                     Name = "sample",
                     FilePath = "sample.png",
                     Type = Embeds.ImageFile.FILETYPEPNG
-                }
+                },
+                new Embeds.ImageFile
+                {
+                    Name = "toucan",
+                    FilePath = "rpng2-bg16-toucan.png",
+                    Type = Embeds.ImageFile.FILETYPEPNG
+                },
             };
 
             _sut.Pages.Add(new Page
@@ -60,6 +66,12 @@ namespace CorePDF.IntegrationTests
                 PageSize = Paper.PAGEA4PORTRAIT,
                 Contents = new List<Content>()
                 {
+                    new Image
+                    {
+                        ImageName = "toucan",
+                        PosX = 300,
+                        PosY = 600
+                    },
                     new Image
                     {
                         ImageName = "sample",

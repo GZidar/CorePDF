@@ -59,93 +59,93 @@ namespace CorePDF.Embeds
         /// </summary>
         public int Height { get; set; }
 
-        public override void PrepareStream(bool compress = false)
+        public void EmbedFile()
         {
-            if ((ByteData == null || ByteData.Length == 0) && !string.IsNullOrEmpty(FilePath) && File.Exists(FilePath))
+            using (var fileStream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
             {
-                using (var fileStream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
+                byte[] rgbbuf = null;
+                var hasAlpha = false;
+
+                if (Type == FILETYPEPNG)
                 {
-                    byte[] rgbbuf = null;
-                    var hasAlpha = false; 
+                    byte[] imageData = null;
+                    //compress = true;
 
-                    if (Type == FILETYPEPNG)
+                    using (BinaryReader br = new BinaryReader(fileStream))
                     {
-                        byte[] imageData = null;
-                        //compress = true;
+                        // check the signature
+                        var sig = br.ReadBytes(8);
 
-                        using (BinaryReader br = new BinaryReader(fileStream))
+                        if (!(sig[0] == 137 && sig[1] == 80 && sig[2] == 78 && sig[3] == 71 && sig[4] == 13 && sig[5] == 10 && sig[6] == 26 && sig[7] == 10))
                         {
-                            // check the signature
-                            var sig = br.ReadBytes(8);
+                            throw new Exception(string.Format("image file {0} is not a PNG", FilePath));
+                        }
 
-                            if (!(sig[0] == 137 && sig[1] == 80 && sig[2] == 78 && sig[3] == 71 && sig[4] == 13 && sig[5] == 10 && sig[6] == 26 && sig[7] == 10))
+                        do
+                        {
+                            var bytes = br.ReadBytes(4);
+                            if (BitConverter.IsLittleEndian)
                             {
-                                throw new Exception(string.Format("image file {0} is not a PNG", FilePath));
+                                Array.Reverse(bytes);
                             }
 
-                            do
+                            var chunkLength = BitConverter.ToInt32(bytes, 0);
+                            var chunkType = Encoding.UTF8.GetString(br.ReadBytes(4));
+
+                            if (chunkLength > 0)
                             {
-                                var bytes = br.ReadBytes(4);
-                                if (BitConverter.IsLittleEndian)
+                                if (chunkType == "IDAT")
                                 {
-                                    Array.Reverse(bytes);
-                                }
-
-                                var chunkLength = BitConverter.ToInt32(bytes, 0);
-                                var chunkType = Encoding.UTF8.GetString(br.ReadBytes(4));
-
-                                if (chunkLength > 0)
-                                {
-                                    if (chunkType == "IDAT")
+                                    // image data
+                                    if (imageData != null)
                                     {
-                                        // image data
-                                        if (imageData != null)
-                                        {
-                                            var chunkData = br.ReadBytes(chunkLength);
-                                            var newArray = new byte[imageData.Length + chunkLength];
+                                        var chunkData = br.ReadBytes(chunkLength);
+                                        var newArray = new byte[imageData.Length + chunkLength];
 
-                                            Array.Copy(imageData, newArray, imageData.Length);
-                                            Array.Copy(chunkData, 0, newArray, imageData.Length, chunkLength);
-                                            imageData = newArray;
-                                        }
-                                        else
-                                        {
-                                            imageData = br.ReadBytes(chunkLength);
-                                        }
+                                        Array.Copy(imageData, newArray, imageData.Length);
+                                        Array.Copy(chunkData, 0, newArray, imageData.Length, chunkLength);
+                                        imageData = newArray;
                                     }
                                     else
                                     {
-                                        var chunkData = br.ReadBytes(chunkLength);
-                                        if (chunkType == "IHDR")
-                                        {
-                                            var width = new byte[4];
-                                            var height = new byte[4];
-
-                                            // Can get details of the PNG here
-                                            Array.Copy(chunkData, 0, width, 0, 4);
-                                            Array.Copy(chunkData, 4, height, 0, 4);
-
-                                            if (BitConverter.IsLittleEndian)
-                                            {
-                                                Array.Reverse(width);
-                                                Array.Reverse(height);
-                                            }
-
-                                            Width = BitConverter.ToInt32(width, 0);
-                                            Height = BitConverter.ToInt32(height, 0);
-
-                                            hasAlpha = (chunkData[9] == 4 || chunkData[9] == 6);
-
-                                            _bitsPerComponent = chunkData[8];
-                                        }
+                                        imageData = br.ReadBytes(chunkLength);
                                     }
                                 }
+                                else
+                                {
+                                    var chunkData = br.ReadBytes(chunkLength);
+                                    if (chunkType == "IHDR")
+                                    {
+                                        var width = new byte[4];
+                                        var height = new byte[4];
 
-                                var chunkCRC = br.ReadBytes(4);
+                                        // Can get details of the PNG here
+                                        Array.Copy(chunkData, 0, width, 0, 4);
+                                        Array.Copy(chunkData, 4, height, 0, 4);
 
-                            } while (fileStream.Position < fileStream.Length);
-                        }
+                                        if (BitConverter.IsLittleEndian)
+                                        {
+                                            Array.Reverse(width);
+                                            Array.Reverse(height);
+                                        }
 
+                                        Width = BitConverter.ToInt32(width, 0);
+                                        Height = BitConverter.ToInt32(height, 0);
+
+                                        hasAlpha = (chunkData[9] == 4 || chunkData[9] == 6);
+
+                                        _bitsPerComponent = chunkData[8];
+                                    }
+                                }
+                            }
+
+                            var chunkCRC = br.ReadBytes(4);
+
+                        } while (fileStream.Position < fileStream.Length);
+                    }
+
+                    if (hasAlpha)
+                    {
                         // Now decompress the image data array
                         using (var memoryStream = new MemoryStream(imageData))
                         {
@@ -159,73 +159,86 @@ namespace CorePDF.Embeds
                             }
                         }
 
-                        if (hasAlpha)
+                        // PNGs have transparancy so these need to be split between rbg and alpha channel data
+                        var abuf = new byte[rgbbuf.Length];
+                        var rbuf = new byte[rgbbuf.Length];
+
+                        var i = 0;
+                        var a = 0;
+                        var r = 0;
+                        while (i < rgbbuf.Length)
                         {
-                            // PNGs have transparancy so these need to be split between rbg and alpha channel data
-                            var abuf = new byte[rgbbuf.Length];
-                            var rbuf = new byte[rgbbuf.Length];
+                            var bytes = new byte[4];
+                            bytes[0] = rgbbuf[i];
+                            i++;
+                            bytes[1] = rgbbuf[i];
+                            i++;
+                            bytes[2] = rgbbuf[i];
+                            i++;
+                            bytes[3] = rgbbuf[i];
+                            i++;
 
-                            var i = 0;
-                            var a = 0;
-                            var r = 0;
-                            while (i < rgbbuf.Length)
-                            {
-                                var bytes = new byte[4];
-                                bytes[0] = rgbbuf[i];
-                                i++;
-                                bytes[1] = rgbbuf[i];
-                                i++;
-                                bytes[2] = rgbbuf[i];
-                                i++;
-                                bytes[3] = rgbbuf[i];
-                                i++;
+                            //if (BitConverter.IsLittleEndian)
+                            //{
+                            //    Array.Reverse(bytes);
+                            //}
 
-                                //if (BitConverter.IsLittleEndian)
-                                //{
-                                //    Array.Reverse(bytes);
-                                //}
-
-                                rbuf[r] = bytes[0];
-                                r++;
-                                rbuf[r] = bytes[1];
-                                r++;
-                                rbuf[r] = bytes[2];
-                                r++;
-                                abuf[a] = bytes[3];
-                                a++;
-                            }
-
-                            rgbbuf = new byte[r];
-
-                            MaskData.ByteData = new byte[a];
-                            MaskData.Height = Height;
-                            MaskData.Width = Width;
-
-                            Array.Copy(rbuf, rgbbuf, r);
-                            Array.Copy(abuf, MaskData.ByteData, a);
-
-                            MaskData.PrepareStream(compress);
+                            rbuf[r] = bytes[0];
+                            r++;
+                            rbuf[r] = bytes[1];
+                            r++;
+                            rbuf[r] = bytes[2];
+                            r++;
+                            abuf[a] = bytes[3];
+                            a++;
                         }
+
+                        rgbbuf = new byte[r];
+
+                        MaskData = new ImageFile()
+                        {
+                            ByteData = new byte[a],
+                            Height = Height,
+                            Width = Width,
+                            Type = IMAGESMASK
+                        };
+
+                        Array.Copy(rbuf, rgbbuf, r);
+                        Array.Copy(abuf, MaskData.ByteData, a);
                     }
-                    else if (Type == FILETYPEJPG)
+                    else
                     {
-                        var fileInfo = new FileInfo(FilePath);
-                        rgbbuf = new byte[fileInfo.Length];
-
-                        //add the bytes that represent the actual image data
-                        if (rgbbuf.Length != fileStream.Read(rgbbuf, 0, rgbbuf.Length))
-                        {
-                            throw new Exception(string.Format("error occurred whilst reading image file {0}", FilePath));
-                        }
+                        // just keep the already compressed data
+                        _compressed = true;
+                        rgbbuf = imageData;
                     }
-
-                    ByteData = rgbbuf;
                 }
-            }
+                else if (Type == FILETYPEJPG)
+                {
+                    var fileInfo = new FileInfo(FilePath);
+                    rgbbuf = new byte[fileInfo.Length];
 
+                    //add the bytes that represent the actual image data
+                    if (rgbbuf.Length != fileStream.Read(rgbbuf, 0, rgbbuf.Length))
+                    {
+                        throw new Exception(string.Format("error occurred whilst reading image file {0}", FilePath));
+                    }
+                }
+
+                ByteData = rgbbuf;
+            }
+        }
+
+        public override void PrepareStream(bool compress = false)
+        {
             _encodedData = ByteData;
 
             base.PrepareStream(compress);
+
+            if (MaskData != null)
+            {
+                MaskData.PrepareStream(compress);
+            }
         }
 
         public override void Publish(StreamWriter stream)
@@ -246,13 +259,15 @@ namespace CorePDF.Embeds
                     PDFData.Add("/ColorSpace", "/DeviceRGB");
                     PDFData.Add("/Filter", "/DCTDecode");
                     break;
+
                 case FILETYPEPNG:
                     PDFData.Add("/ColorSpace", "/DeviceRGB");
-                    if (MaskData.ByteData != null)
+                    if (MaskData != null)
                     {
                         PDFData.Add("/SMask", string.Format("{0} 0 R", MaskData.ObjectNumber));
                     }
                     break;
+
                 case IMAGESMASK:
                     PDFData.Add("/ColorSpace", "/DeviceGray");
                     break;

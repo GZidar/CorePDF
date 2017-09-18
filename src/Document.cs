@@ -66,6 +66,9 @@ namespace CorePDF
                 stream.WriteLine("%PDF-{0}", "1.4"); // the version of PDF 
                 stream.WriteLine("%\x82\x82\x82\x82"); // needed to allow editors to know that this is a binary file
 
+                // get the data for the embedded files
+                EmbedFiles();
+
                 // place all the document objects into postion
                 var objects = PositionObjects();
 
@@ -149,6 +152,16 @@ namespace CorePDF
             if (string.IsNullOrEmpty(name)) return null;
 
             return Images.Find(i => i.Name.ToLower() == name.ToLower());
+        }
+
+        private void EmbedFiles()
+        {
+            foreach (var image in Images)
+            {
+                image.EmbedFile();
+            }
+
+            // TODO: add support for embedding of fonts
         }
 
         private void PrepareStreams()
@@ -268,14 +281,9 @@ namespace CorePDF
                 image.Id = string.Format("I{0}", imageCount);
                 image.ObjectNumber = objectCount;
 
-                if (image.Type == ImageFile.FILETYPEPNG)
+                if (image.MaskData != null)
                 {
-                    // add the mask object here
-                    image.MaskData = new ImageFile
-                    {
-                        Type = ImageFile.IMAGESMASK
-                    };
-
+                    // take any mask data into account as well
                     imageCount++;
                     objectCount++;
                     image.MaskData.Id = string.Format("I{0}", imageCount);
