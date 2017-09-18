@@ -16,6 +16,12 @@
     <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\smiley.jpg" Link="smiley.jpg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\square.jpg" Link="square.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\square.png" Link="square.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

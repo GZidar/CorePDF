@@ -41,17 +41,19 @@ namespace CorePDF.IntegrationTests
             {
                 new Embeds.ImageFile
                 {
-                    Name = "logo",
+                    Name = "smiley",
                     FilePath = "smiley.jpg",
                     Type = Embeds.ImageFile.FILETYPEJPG,
-                    Height = 299,
-                    Width = 299
+                    Height = 3,
+                    Width = 3
                 },
                 new Embeds.ImageFile
                 {
                     Name = "sample",
                     FilePath = "sample.png",
-                    Type = Embeds.ImageFile.FILETYPEPNG
+                    Type = Embeds.ImageFile.FILETYPEPNG,
+                    Height = 3,
+                    Width = 3
                 },
                 new Embeds.ImageFile
                 {
@@ -76,14 +78,14 @@ namespace CorePDF.IntegrationTests
                     {
                         ImageName = "sample",
                         PosX = 400,
-                        PosY = 500
+                        PosY = 600
                     },
                     new Image
                     {
-                        ScaleFactor = 0.1m,
-                        ImageName = "logo",
+                        ImageName = "smiley",
                         PosX = 200,
-                        PosY = 500
+                        PosY = 600,
+                        ScaleFactor = 0.2m
                     },
                     new TextBox
                     {
