@@ -7,6 +7,27 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\rpng2-bg16-toucan.png" Link="rpng2-bg16-toucan.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\sample.png" Link="sample.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\smiley.jpg" Link="smiley.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\square.gif" Link="square.gif">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\square.jpg" Link="square.jpg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\square.png" Link="square.png">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0-preview-20170628-02" />
     <PackageReference Include="xunit" Version="2.2.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.2.0" />

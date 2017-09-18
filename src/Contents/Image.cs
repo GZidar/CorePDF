@@ -39,7 +39,7 @@ namespace CorePDF.Contents
                 result += string.Format("{0} 0 0 {1} {2} {3} cm\n", imageFile.Width * ScaleFactor, imageFile.Height * ScaleFactor, PosX, PosY);
             }
             result += string.Format("/{0} Do\n", imageFile.Id);
-            result += "Q\n";
+            result += "Q";
 
             _encodedData = Encoding.UTF8.GetBytes(result);
 

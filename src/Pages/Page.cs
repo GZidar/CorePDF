@@ -112,7 +112,7 @@ namespace CorePDF.Pages
             contentRefs += "]";
 
             var resources = new Dictionary<string, dynamic>();
-            resources.Add("/ProcSet", "[/PDF /Text /ImageB]");
+            resources.Add("/ProcSet", "[/PDF /Text /ImageB /ImageC /ImageI]");
             if (fonts.Count > 0)
             {
                 resources.Add("/Font", fonts);

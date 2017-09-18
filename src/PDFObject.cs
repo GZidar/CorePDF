@@ -23,7 +23,7 @@ namespace CorePDF
     {
         protected byte[] _encodedData { get; set; }
         protected Dictionary<string, dynamic> _pdfObject { get; set; } = new Dictionary<string, dynamic>();
-        private bool _compressed { get; set; }
+        protected bool _compressed { get; set; }
 
         /// <summary>
         /// The ID of the object within the PDF document - this value is set during document creation
