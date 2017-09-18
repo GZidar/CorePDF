@@ -69,7 +69,6 @@ namespace CorePDF.Embeds
                 if (Type == FILETYPEPNG)
                 {
                     byte[] imageData = null;
-                    //compress = true;
 
                     using (BinaryReader br = new BinaryReader(fileStream))
                     {
