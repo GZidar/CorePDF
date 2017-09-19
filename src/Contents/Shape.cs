@@ -37,10 +37,16 @@ namespace CorePDF.Contents
         /// </summary>
         public int BorderRadius { get; set; } = 0;
 
+        /// <summary>
+        /// This number is used to define the extent of the curve in the bezier curve calculations.
+        /// The default value is set to allow for returning a circular result. The value must be 
+        /// between 0 and 1. Zero will result in no curvature on the arc.
+        /// </summary>
+        /// <seealso cref="http://spencermortensen.com/articles/bezier-circle/"/>
+        public decimal Curvature { get; set; } = 0.55191502449m;
+
         public override void PrepareStream(PageRoot pageRoot, Size pageSize, List<Font> fonts, bool compress)
         {
-            var roundedness = 0.55191502449m; // mathematical constant for bezier curve calculations to create a circle
-
             var result = string.Format("{0} w\n", Stroke.Width);
             if (!string.IsNullOrEmpty(Stroke.DashPattern))
             {
@@ -114,8 +120,8 @@ namespace CorePDF.Contents
                         result += string.Format("{0} {1} l\n", curX, curY);
 
                         x1 = curX;
-                        y1 = curY + (int)(roundedness * BorderRadius);
-                        x2 = curX + BorderRadius - (int)(roundedness * BorderRadius);
+                        y1 = curY + (int)(Curvature * BorderRadius);
+                        x2 = curX + BorderRadius - (int)(Curvature * BorderRadius);
                         y2 = curY + BorderRadius;
                         x3 = curX + BorderRadius;
                         y3 = curY + BorderRadius;
@@ -125,10 +131,10 @@ namespace CorePDF.Contents
                         curY = PosY + Height;
                         result += string.Format("{0} {1} l\n", curX.ToString(), curY.ToString());
 
-                        x1 = PosX + Width - BorderRadius + (int)(BorderRadius * roundedness);
+                        x1 = PosX + Width - BorderRadius + (int)(BorderRadius * Curvature);
                         y1 = PosY + Height;
                         x2 = PosX + Width;
-                        y2 = PosY + Height - BorderRadius + (int)(BorderRadius * roundedness);
+                        y2 = PosY + Height - BorderRadius + (int)(BorderRadius * Curvature);
                         x3 = PosX + Width;
                         y3 = PosY + Height - BorderRadius;
                         result += string.Format("{0} {1} {2} {3} {4} {5} c\n", x1, y1, x2, y2, x3, y3);
@@ -138,8 +144,8 @@ namespace CorePDF.Contents
                         result += string.Format("{0} {1} l\n", curX.ToString(), curY.ToString());
 
                         x1 = x3;
-                        y1 = PosY + BorderRadius - (int)(BorderRadius * roundedness);
-                        x2 = PosX + Width - BorderRadius + (int)(BorderRadius * roundedness);
+                        y1 = PosY + BorderRadius - (int)(BorderRadius * Curvature);
+                        x2 = PosX + Width - BorderRadius + (int)(BorderRadius * Curvature);
                         y2 = PosY;
                         x3 = PosX + Width - BorderRadius;
                         y3 = PosY;
@@ -149,10 +155,10 @@ namespace CorePDF.Contents
                         curY = PosY;
                         result += string.Format("{0} {1} l\n", curX.ToString(), curY.ToString());
 
-                        x1 = PosX + BorderRadius - (int)(BorderRadius * roundedness);
+                        x1 = PosX + BorderRadius - (int)(BorderRadius * Curvature);
                         y1 = PosY;
                         x2 = PosX;
-                        y2 = PosY + BorderRadius - (int)(BorderRadius * roundedness);
+                        y2 = PosY + BorderRadius - (int)(BorderRadius * Curvature);
                         x3 = PosX;
                         y3 = PosY + BorderRadius;
                         result += string.Format("{0} {1} {2} {3} {4} {5} c\n", x1, y1, x2, y2, x3, y3);
@@ -181,33 +187,33 @@ namespace CorePDF.Contents
                     // TODO: This is a very similar calculation to the one above it might be worth considering a way to consolidate these so that 
                     // we don't duplicate code.
                     x1 = posX;
-                    y1 = posY + (int)(roundedness * heightRadius);
-                    x2 = posX + widthRadius - (int)(roundedness * widthRadius);
+                    y1 = posY + (int)(Curvature * heightRadius);
+                    x2 = posX + widthRadius - (int)(Curvature * widthRadius);
                     y2 = posY + heightRadius;
                     x3 = posX + widthRadius;
                     y3 = posY + heightRadius;
                     result += string.Format("{0} {1} {2} {3} {4} {5} c\n", x1, y1, x2, y2, x3, y3);
 
-                    x1 = posX + Width - (int)(widthRadius * roundedness);
+                    x1 = posX + Width - (int)(widthRadius * Curvature);
                     y1 = posY + heightRadius;
                     x2 = posX + Width;
-                    y2 = posY + (int)(heightRadius * roundedness);
+                    y2 = posY + (int)(heightRadius * Curvature);
                     x3 = posX + Width;
                     y3 = posY;
                     result += string.Format("{0} {1} {2} {3} {4} {5} c\n", x1, y1, x2, y2, x3, y3);
 
                     x1 = x3;
-                    y1 = posY - (int)(heightRadius * roundedness);
-                    x2 = posX + widthRadius + (int)(widthRadius * roundedness);
+                    y1 = posY - (int)(heightRadius * Curvature);
+                    x2 = posX + widthRadius + (int)(widthRadius * Curvature);
                     y2 = posY - heightRadius;
                     x3 = posX + widthRadius;
                     y3 = posY - heightRadius;
                     result += string.Format("{0} {1} {2} {3} {4} {5} c\n", x1, y1, x2, y2, x3, y3);
 
-                    x1 = posX + widthRadius - (int)(widthRadius * roundedness);
+                    x1 = posX + widthRadius - (int)(widthRadius * Curvature);
                     y1 = y3;
                     x2 = posX;
-                    y2 = posY - (int)(heightRadius * roundedness);
+                    y2 = posY - (int)(heightRadius * Curvature);
                     x3 = posX;
                     y3 = posY;
                     result += string.Format("{0} {1} {2} {3} {4} {5} c\n", x1, y1, x2, y2, x3, y3);

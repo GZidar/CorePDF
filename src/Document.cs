@@ -140,14 +140,14 @@ namespace CorePDF
             }
         }
 
-        public HeaderFooter GetHeaderFooter(string name)
+        public virtual HeaderFooter GetHeaderFooter(string name)
         {
             if (string.IsNullOrEmpty(name)) return null;
 
             return HeadersFooters.Find(hf => hf.Name.ToLower() == name.ToLower());
         }
 
-        public ImageFile GetImage(string name)
+        public virtual ImageFile GetImage(string name)
         {
             if (string.IsNullOrEmpty(name)) return null;
 

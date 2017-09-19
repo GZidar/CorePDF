@@ -13,7 +13,7 @@ namespace CorePDF
         /// <summary>
         /// A reference back up to the document
         /// </summary>
-        public Document Document { get; set; }
+        public virtual Document Document { get; set; }
 
         public override void Publish(StreamWriter stream)
         {
