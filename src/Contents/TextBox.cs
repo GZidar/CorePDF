@@ -313,7 +313,7 @@ namespace CorePDF.Contents
         /// <param name="fontSize"></param>
         /// <param name="font"></param>
         /// <returns></returns>
-        public int StringLength(string text, int fontSize, Font font)
+        private int StringLength(string text, int fontSize, Font font)
         {
             char[] cArray = text.ToCharArray();
             int width = 0;
