@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<package>
+    <metadata minClientVersion="2.0">
+        <id>CorePDF</id>
+        <version>0.1.0</version>
+        <title>CorePDF</title>
+        <authors>CorePDF Contributors</authors>
+        <owners>CorePDF Contributors</owners>
+        <description>A basic PDF document generation library for .Net Core</description>
+        <language>en-US</language>
+        <projectUrl>https://github.com/GZidar/CorePDF</projectUrl>
+        <iconUrl>https://github.com/GZidar/CorePDF/src/corepdf.png</iconUrl>
+        <licenseUrl>https://github.com/GZidar/CorePDF#license</licenseUrl>
+        <copyright>Copyright © 2017 CorePDF Contributors</copyright>
+        <requireLicenseAcceptance>false</requireLicenseAcceptance>
+        <dependencies>
+            <dependency id="Newtonsoft.json" version="10.0.1" />
+            <dependency id="SharpZipLib.NETStandard" version="0.86.0.1" />
+            <dependency id="SixLabors.ImageSharp" version="1.0.0-beta0001" />
+        </dependencies>
+        <tags>pdf-generation pdf</tags>
+    </metadata>
+</package>
