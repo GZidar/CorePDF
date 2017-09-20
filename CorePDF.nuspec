@@ -9,7 +9,7 @@
         <description>A basic PDF document generation library for .Net Core</description>
         <language>en-US</language>
         <projectUrl>https://github.com/GZidar/CorePDF</projectUrl>
-        <iconUrl>https://github.com/GZidar/CorePDF/src/corepdf.png</iconUrl>
+        <iconUrl>https://github.com/GZidar/CorePDF/raw/development/src/corepdf.png</iconUrl>
         <licenseUrl>https://github.com/GZidar/CorePDF#license</licenseUrl>
         <copyright>Copyright © 2017 CorePDF Contributors</copyright>
         <requireLicenseAcceptance>false</requireLicenseAcceptance>
