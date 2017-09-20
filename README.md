@@ -74,7 +74,7 @@ using (var filestream = new FileStream("sample.pdf", FileMode.Create, FileAccess
 ```
 
 # License
-Copyright (c) 2017 Goran Zidar
+Copyright (c) 2017 CorePDF Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
