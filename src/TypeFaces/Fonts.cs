@@ -33,6 +33,75 @@ namespace CorePDF.TypeFaces
         public const string FONTSYMBOL = "Symbol";
         public const string FONTZAPF = "ZapfDingbats";
 
+        public const string BARCODE39 = "Code39";
+        public const string BARCODE128 = "Code128";
+
+        public static List<Barcode> Barcodes()
+        {
+            var result = new List<Barcode>
+            {
+                new Barcode
+                {
+                    CharacterSet = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ-. *+/$%",
+                    StartStopCharacter = '*',
+                    FontName = BARCODE39,
+                    BaseFont = BARCODE39,
+                    Metrics = new List<int>{1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,
+                        1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,
+                        1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,1200,900,900,900,
+                        900},
+                    Definitions = new List<string>
+                    {
+                        "Tt.ttT",
+                        "tT.ttT",
+                        "TT.ttt",
+                        "tt.TtT",
+                        "Tt.Ttt",
+                        "tT.Ttt",
+                        "tt.tTT",
+                        "Tt.tTt",
+                        "tT.tTt",
+                        "tt.TTt",
+                        "Ttt.tT",
+                        "tTt.tT",
+                        "TTt.tt",
+                        "ttT.tT",
+                        "TtT.tt",
+                        "tTT.tt",
+                        "ttt.TT",
+                        "Ttt.Tt",
+                        "tTt.Tt",
+                        "ttT.Tt",
+                        "Tttt.T",
+                        "tTtt.T",
+                        "TTtt.t",
+                        "ttTt.T",
+                        "TtTt.t",
+                        "tTTt.t",
+                        "tttT.T",
+                        "TttT.t",
+                        "tTtT.t",
+                        "ttTT.t",
+                        "T.tttT",
+                        "t.TttT",
+                        "T.Tttt",
+                        "t.tTtT",
+                        "T.tTtt",
+                        "t.TTtt",
+                        "t.ttTT",
+                        "T.ttTt",
+                        "t.TtTt",
+                        "t.tTTt",
+                        "t.tt.t.t",
+                        "t.t.tt.t",
+                        "t.t.t.tt",
+                        "tt.t.t.t"
+                    }
+                }
+            };
+
+            return result;
+        }
 
         /// <summary>
         /// Enumerate the fonts that have been defined as being available for use.
@@ -280,6 +349,11 @@ namespace CorePDF.TypeFaces
         public static Font Font(string name, bool bold = false, bool italic = false)
         {
             return Styles().FirstOrDefault(f => f.BaseFont.ToLower() == name.ToLower() && f.Bold == bold && f.Italic == italic);
+        }
+
+        public static Barcode Font(string name)
+        {
+            return Barcodes().FirstOrDefault(f => f.BaseFont.ToLower() == name.ToLower());
         }
     }
 

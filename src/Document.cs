@@ -50,6 +50,7 @@ namespace CorePDF
                 Document = this
             };
             _fonts.AddRange(Fonts.Styles());
+            _fonts.AddRange(Fonts.Barcodes());
         }
 
         /// <summary>

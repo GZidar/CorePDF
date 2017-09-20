@@ -62,6 +62,9 @@ namespace CorePDF.Embeds
 
         public void EmbedFile()
         {
+            // do nothing if there is no valid file specified
+            if (string.IsNullOrEmpty(FilePath) || !File.Exists(FilePath)) return;
+
             using (var image = Image.Load(FilePath))
             {
                 Height = image.Height;

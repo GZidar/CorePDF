@@ -25,7 +25,7 @@ namespace CorePDF.Contents
         public override void PrepareStream(PageRoot pageRoot, Size pageSize, List<Font> fonts, bool compress)
         {
             var imageFile = pageRoot.Document.GetImage(ImageName);
-            if (imageFile == null) return;
+            if (imageFile == null || imageFile.ByteData == null) return;
 
             var result = "q\n";
             if (Height > 0 && Width > 0)
