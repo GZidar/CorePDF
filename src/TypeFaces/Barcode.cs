@@ -10,7 +10,8 @@ namespace CorePDF.TypeFaces
         /// The list of valid characters in the barcode
         /// </summary>
         public string CharacterSet { get; set; }
-        public char StartStopCharacter { get; set; }
+        public string StartCharacter { get; set; }
+        public string StopCharacter { get; set; }
         public List<string> Definitions { get; set; }
     }
 }

@@ -56,23 +56,23 @@ namespace CorePDF.Contents
             }
 
             decimal curX = PosX;
-                // Add the start/stop characters
-            var content = string.Format("{0}{1}{0}", contentFont.StartStopCharacter, Text);
-            var stringLength = StringLength(content, FontSize, contentFont);
+            // Add the start/stop characters
+            var content = string.Format("{0}{1}{2}", contentFont.StartCharacter, Text, contentFont.StopCharacter);
+            //var stringLength = StringLength(content, FontSize, contentFont);
 
-            switch (TextAlignment)
-            {
-                case Alignment.Center:
-                    curX = PosX - (stringLength / 2);
+            //switch (TextAlignment)
+            //{
+            //    case Alignment.Center:
+            //        curX = PosX - (stringLength / 2);
 
-                    break;
-                case Alignment.Right:
-                    curX = (PosX - stringLength);
+            //        break;
+            //    case Alignment.Right:
+            //        curX = (PosX - stringLength);
 
-                    break;
-                case Alignment.Left:
-                    break;
-            }
+            //        break;
+            //    case Alignment.Left:
+            //        break;
+            //}
 
             if (!string.IsNullOrEmpty(Color))
             {
@@ -98,7 +98,7 @@ namespace CorePDF.Contents
                 var lineHeight = LineHeight;
                 if (ShowText)
                 {
-                    if (c == contentFont.StartStopCharacter)
+                    if (c.ToString() == contentFont.StopCharacter || c.ToString() == contentFont.StartCharacter)
                     {
                         if (textAreaStart != 0)
                         {
@@ -113,48 +113,22 @@ namespace CorePDF.Contents
                     }
                 }
 
-                var width = contentFont.Metrics[contentFont.CharacterSet.IndexOf(c)] * FontSize / 1000;
+                //var width = contentFont.Metrics[contentFont.CharacterSet.IndexOf(c)] * FontSize / 1000;
                 var pattern = contentFont.Definitions[contentFont.CharacterSet.IndexOf(c)];
 
                 var pArray = pattern.ToCharArray();
                 foreach (char p in pArray)
                 {
-                    var elementWidth = 0m;
-                    var lineWidth = 0m;
-
-                    switch (p)
+                    if (p == '1')
                     {
-                        case 'T':
-                            // think line
-                            lineWidth = 2m;
-                            elementWidth = 3;
-                            break;
-                        case 't':
-                            // thin line
-                            lineWidth = 1m;
-                            elementWidth = 2m;
-                            break;
-                        case '.':
-                            // this is a space.
-                            lineWidth = 0m;
-                            elementWidth = 2m;
-                            break;
+                        result += string.Format("{0} {1} m\n", curX, curY);
+                        result += string.Format("{0} {1} l\n", curX, curY + lineHeight);
                     }
 
-                    var posX = curX;
-                    for (var i = 0; i < lineWidth; i+= strokeWidth)
-                    {
-                        posX += i;
-                        result += string.Format("{0} {1} m\n", posX, curY);
-                        result += string.Format("{0} {1} l\n", posX, curY + lineHeight);
-                    }
-
-                    curX += elementWidth;
+                    curX += strokeWidth;
                 }
 
-                curX += strokeWidth;
-
-                if (ShowText && c == contentFont.StartStopCharacter)
+                if (ShowText && c.ToString() == contentFont.StartCharacter)
                 {
                     // Save the start position for the text value
                     if (textAreaStart == 0)
@@ -168,8 +142,16 @@ namespace CorePDF.Contents
 
             if (ShowText)
             {
+                if (textAreaStart == 0)
+                {
+                    // this will be the case when there is no start and stop character 
+                    // for the font
+                    textAreaStart = PosX;
+                    textAreaWidth = curX - PosX;
+                }
+
                 var textFont = fonts.Find(f => f.FontName == TextFont);
-                stringLength = base.StringLength(Text, FontSize, textFont);
+                var stringLength = base.StringLength(Text, FontSize, textFont);
                 curX = textAreaStart + ((textAreaWidth - stringLength) / 2);
 
                 result += "\nBT\n";
