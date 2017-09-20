@@ -26,7 +26,7 @@ namespace CorePDF.Contents
             var result = "";
             var contentFont = fonts.Find(f => f.FontName == FontFace) as TypeFaces.Barcode;
 
-            if (ShowText && LineHeight < FontSize)
+            if (ShowText && LineHeight <= FontSize)
             {
                 // increase the height of the barcode area to allow for the text to be shown
                 LineHeight += FontSize;
@@ -58,21 +58,21 @@ namespace CorePDF.Contents
             decimal curX = PosX;
             // Add the start/stop characters
             var content = string.Format("{0}{1}{2}", contentFont.StartCharacter, Text, contentFont.StopCharacter);
-            //var stringLength = StringLength(content, FontSize, contentFont);
+            var stringLength = StringLength(content, FontSize, contentFont);
 
-            //switch (TextAlignment)
-            //{
-            //    case Alignment.Center:
-            //        curX = PosX - (stringLength / 2);
+            switch (TextAlignment)
+            {
+                case Alignment.Center:
+                    curX = PosX - (stringLength / 2);
 
-            //        break;
-            //    case Alignment.Right:
-            //        curX = (PosX - stringLength);
+                    break;
+                case Alignment.Right:
+                    curX = (PosX - stringLength);
 
-            //        break;
-            //    case Alignment.Left:
-            //        break;
-            //}
+                    break;
+                case Alignment.Left:
+                    break;
+            }
 
             if (!string.IsNullOrEmpty(Color))
             {
@@ -85,8 +85,6 @@ namespace CorePDF.Contents
 
             // reset the dash pattern
             result += "[] 0 d\n";
-            var strokeWidth = 1;
-            result += string.Format("{0} w\n", 1);
 
             var textAreaStart = 0m;
             var textAreaWidth = 0m;
@@ -94,7 +92,7 @@ namespace CorePDF.Contents
             char[] cArray = content.ToUpper().ToCharArray();
             foreach (char c in cArray)
             {
-                var curY = PosY;
+                var curY = (decimal)PosY;
                 var lineHeight = LineHeight;
                 if (ShowText)
                 {
@@ -113,8 +111,10 @@ namespace CorePDF.Contents
                     }
                 }
 
-                //var width = contentFont.Metrics[contentFont.CharacterSet.IndexOf(c)] * FontSize / 1000;
                 var pattern = contentFont.Definitions[contentFont.CharacterSet.IndexOf(c)];
+                var strokeWidth = (contentFont.Metrics[contentFont.CharacterSet.IndexOf(c)] * FontSize / 1000m) / pattern.Length;
+
+                result += string.Format("{0} w\n", strokeWidth);
 
                 var pArray = pattern.ToCharArray();
                 foreach (char p in pArray)
@@ -127,6 +127,8 @@ namespace CorePDF.Contents
 
                     curX += strokeWidth;
                 }
+
+                result += "S\n";
 
                 if (ShowText && c.ToString() == contentFont.StartCharacter)
                 {
@@ -151,7 +153,7 @@ namespace CorePDF.Contents
                 }
 
                 var textFont = fonts.Find(f => f.FontName == TextFont);
-                var stringLength = base.StringLength(Text, FontSize, textFont);
+                stringLength = base.StringLength(Text, FontSize, textFont);
                 curX = textAreaStart + ((textAreaWidth - stringLength) / 2);
 
                 result += "\nBT\n";
