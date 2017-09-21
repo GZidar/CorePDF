@@ -2,6 +2,18 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
+    <Description>A basic PDF document generation library for .Net Core</Description>
+    <Authors>CorePDF Contributors</Authors>
+    <Company />
+    <Version>0.1.0-alpha</Version>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Copyright>2017 CorePDF Contributors</Copyright>
+    <PackageProjectUrl>https://github.com/GZidar/CorePDF</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/GZidar/CorePDF#license</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/GZidar/CorePDF</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>pdf-generation pdf .NETCore</PackageTags>
+    <PackageIconUrl>https://github.com/GZidar/CorePDF/src/corepdf.png</PackageIconUrl>
   </PropertyGroup>
 
   <ItemGroup>
