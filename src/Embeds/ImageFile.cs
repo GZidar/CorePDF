@@ -126,13 +126,13 @@ namespace CorePDF.Embeds
                             path = path.Replace("v", "v ");
                             path = path.Replace("C", "C "); // Cubic Bezier curve
                             path = path.Replace("c", "c ");
-                            path = path.Replace("S", "S "); // Smoothed CBC
+                            path = path.Replace("S", "S "); // Smoothed CBC TODO
                             path = path.Replace("s", "s ");
                             path = path.Replace("Q", "Q "); // Quadratic Bezier curve
                             path = path.Replace("q", "q ");
-                            path = path.Replace("T", "T "); // Smoothed QBC
+                            path = path.Replace("T", "T "); // Smoothed QBC TODO
                             path = path.Replace("t", "t ");
-                            path = path.Replace("A", "A "); // Eliptical Arc
+                            path = path.Replace("A", "A "); // Eliptical Arc TODO
                             path = path.Replace("a", "a ");
 
                             var pathElements = path.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -143,6 +143,7 @@ namespace CorePDF.Embeds
                             var startPosY = 0m;
                             var inLineMode = false;
 
+                            // TODO: polygons need to become paths and handle relative movements
                             while (position < pathElements.Length)
                             {
                                 var element = pathElements[position];
