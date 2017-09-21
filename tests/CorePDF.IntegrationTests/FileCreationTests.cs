@@ -41,19 +41,25 @@ namespace CorePDF.IntegrationTests
             {
                 new Embeds.ImageFile
                 {
-                    Name = "smiley",
-                    FilePath = "smiley.jpg"
+                    Name = "vector",
+                    FilePath = "sample.svg",
+                    Rasterize = false
                 },
-                new Embeds.ImageFile
-                {
-                    Name = "sample",
-                    FilePath = "sample.png"
-                },
-                new Embeds.ImageFile
-                {
-                    Name = "toucan",
-                    FilePath = "rpng2-bg16-toucan.png"
-                },
+                //new Embeds.ImageFile
+                //{
+                //    Name = "smiley",
+                //    FilePath = "smiley.jpg"
+                //},
+                //new Embeds.ImageFile
+                //{
+                //    Name = "sample",
+                //    FilePath = "sample.png"
+                //},
+                //new Embeds.ImageFile
+                //{
+                //    Name = "toucan",
+                //    FilePath = "rpng2-bg16-toucan.png"
+                //},
             };
 
             _sut.Pages.Add(new Page
@@ -63,23 +69,30 @@ namespace CorePDF.IntegrationTests
                 {
                     new Image
                     {
-                        ImageName = "toucan",
+                        ImageName = "vector",
                         PosX = 300,
-                        PosY = 600
-                    },
-                    new Image
-                    {
-                        ImageName = "sample",
-                        PosX = 400,
-                        PosY = 600
-                    },
-                    new Image
-                    {
-                        ImageName = "smiley",
-                        PosX = 200,
                         PosY = 600,
-                        ScaleFactor = 0.2m
+                        ScaleFactor = 1m
                     },
+                    //new Image
+                    //{
+                    //    ImageName = "toucan",
+                    //    PosX = 300,
+                    //    PosY = 600
+                    //},
+                    //new Image
+                    //{
+                    //    ImageName = "sample",
+                    //    PosX = 400,
+                    //    PosY = 600
+                    //},
+                    //new Image
+                    //{
+                    //    ImageName = "smiley",
+                    //    PosX = 200,
+                    //    PosY = 600,
+                    //    ScaleFactor = 0.2m
+                    //},
                     new TextBox
                     {
                         Text = "This is a test document",
