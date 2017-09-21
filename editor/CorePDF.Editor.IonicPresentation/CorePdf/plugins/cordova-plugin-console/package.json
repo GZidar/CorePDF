@@ -1,0 +1,79 @@
+{
+  "_from": "cordova-plugin-console@1.0.5",
+  "_id": "cordova-plugin-console@1.0.5",
+  "_inBundle": false,
+  "_integrity": "sha1-8OKa7pwDyrnp2IOwHRnyLd1chXA=",
+  "_location": "/cordova-plugin-console",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "version",
+    "registry": true,
+    "raw": "cordova-plugin-console@1.0.5",
+    "name": "cordova-plugin-console",
+    "escapedName": "cordova-plugin-console",
+    "rawSpec": "1.0.5",
+    "saveSpec": null,
+    "fetchSpec": "1.0.5"
+  },
+  "_requiredBy": [
+    "#USER",
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/cordova-plugin-console/-/cordova-plugin-console-1.0.5.tgz",
+  "_shasum": "f0e29aee9c03cab9e9d883b01d19f22ddd5c8570",
+  "_spec": "cordova-plugin-console@1.0.5",
+  "_where": "C:\\Workspaces\\corepdf\\CorePDF\\editor\\CorePDF.Editor.IonicPresentation\\CorePdf\\node_modules",
+  "author": {
+    "name": "Apache Software Foundation"
+  },
+  "bugs": {
+    "url": "https://github.com/apache/cordova-plugin-console/issues"
+  },
+  "bundleDependencies": false,
+  "cordova": {
+    "id": "cordova-plugin-console",
+    "platforms": [
+      "ios",
+      "ubuntu",
+      "wp7",
+      "wp8",
+      "windows8",
+      "windows"
+    ]
+  },
+  "deprecated": false,
+  "description": "Cordova Console Plugin",
+  "devDependencies": {
+    "jshint": "^2.6.0"
+  },
+  "engines": {
+    "cordovaDependencies": {
+      "2.0.0": {
+        "cordova": ">100"
+      }
+    }
+  },
+  "homepage": "https://github.com/apache/cordova-plugin-console#readme",
+  "keywords": [
+    "cordova",
+    "console",
+    "ecosystem:cordova",
+    "cordova-ios",
+    "cordova-ubuntu",
+    "cordova-wp7",
+    "cordova-wp8",
+    "cordova-windows8",
+    "cordova-windows"
+  ],
+  "license": "Apache-2.0",
+  "name": "cordova-plugin-console",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/apache/cordova-plugin-console.git"
+  },
+  "scripts": {
+    "jshint": "node node_modules/jshint/bin/jshint www && node node_modules/jshint/bin/jshint src && node node_modules/jshint/bin/jshint tests",
+    "test": "npm run jshint"
+  },
+  "version": "1.0.5"
+}

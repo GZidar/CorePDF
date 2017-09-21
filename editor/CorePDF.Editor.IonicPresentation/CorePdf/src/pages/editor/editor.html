@@ -1,0 +1,23 @@
+<ion-header>
+  <ion-navbar>
+    <ion-title>Editor</ion-title>
+  </ion-navbar>
+</ion-header>
+
+<ion-content class="ion-content" padding>
+  <h2>PDF JSON Editor</h2>
+  <div class="controls">
+    <button ion-button (click)="newDocument($event)">New Document</button>
+    <button ion-button (click)="previewDocument($event)">Preview</button>
+  </div>
+  <div class="edit-region">
+      <textarea [(ngModel)]="documentText" id="documentData" name="documentData" autofocus="autofocus"></textarea>
+  </div>
+
+  <div class="preview" *ngIf="showPDF">
+    <div class="preview-controls">
+        <button ion-button id="closePreviewButton" (click)="closePreview()">X</button>
+    </div>
+    <iframe [src]="pdf"></iframe>
+  </div>
+</ion-content>

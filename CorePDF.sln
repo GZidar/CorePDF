@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26906.1
+VisualStudioVersion = 15.0.26730.15
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CorePDF", "src\CorePDF.csproj", "{502ECB2C-72D9-4237-A053-7EE20D2299CA}"
 EndProject
@@ -28,6 +28,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		package.json = package.json
 		README.md = README.md
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CorePDF.Editor.IonicPresentation", "editor\CorePDF.Editor.IonicPresentation\CorePDF.Editor.IonicPresentation.csproj", "{06C4D5DC-CB03-4B89-AA72-F905F3CC7DB4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,6 +61,10 @@ Global
 		{57635146-C98F-4C98-AC0D-6D92596C4257}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57635146-C98F-4C98-AC0D-6D92596C4257}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{57635146-C98F-4C98-AC0D-6D92596C4257}.Release|Any CPU.Build.0 = Release|Any CPU
+		{06C4D5DC-CB03-4B89-AA72-F905F3CC7DB4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{06C4D5DC-CB03-4B89-AA72-F905F3CC7DB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{06C4D5DC-CB03-4B89-AA72-F905F3CC7DB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{06C4D5DC-CB03-4B89-AA72-F905F3CC7DB4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -69,6 +75,7 @@ Global
 		{133FE92C-CE32-4CAE-B86C-2BE48F973951} = {F019199F-72DF-452B-ACDE-92BED9876CA3}
 		{FFCF2E1B-8FE1-436D-A20A-5B35678DCA67} = {F019199F-72DF-452B-ACDE-92BED9876CA3}
 		{57635146-C98F-4C98-AC0D-6D92596C4257} = {92C4B544-C183-492A-8EEE-9BFA20BB55C0}
+		{06C4D5DC-CB03-4B89-AA72-F905F3CC7DB4} = {F019199F-72DF-452B-ACDE-92BED9876CA3}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {D92267D5-81D6-40E4-B346-32813EDBC1D9}

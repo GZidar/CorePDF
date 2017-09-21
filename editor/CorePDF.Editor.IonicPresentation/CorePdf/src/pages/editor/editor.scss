@@ -1,0 +1,38 @@
+
+.edit-region {
+    height: 80%;
+    width: 100%;
+}
+
+#documentData {
+    height: 100%;
+    width: 100%;
+}
+
+textarea {
+    resize: none;
+}
+
+.preview {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+
+    background: white;
+
+    iframe {
+        width: 99%;
+        height: 99%;
+    }
+}
+
+#closePreviewButton {
+    height: 20px;
+    width: 20px;
+
+    position: absolute;
+    top:0;
+    right: 0;
+}
