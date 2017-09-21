@@ -13,5 +13,7 @@ namespace CorePDF.TypeFaces
         public string StartCharacter { get; set; }
         public string StopCharacter { get; set; }
         public List<string> Definitions { get; set; }
+        public Func<string, string> PreProcessor { get; set; }
+
     }
 }
