@@ -70,9 +70,9 @@ namespace CorePDF.IntegrationTests
                     new Image
                     {
                         ImageName = "vector",
-                        PosX = 300,
+                        PosX = 20,
                         PosY = 600,
-                        ScaleFactor = 1m
+                        ScaleFactor = 0.4m
                     },
                     //new Image
                     //{

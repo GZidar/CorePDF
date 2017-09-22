@@ -113,14 +113,26 @@ namespace CorePDF
                 color = color.Substring(1);
             }
 
-            var r = int.Parse(color.Substring(0, 2), NumberStyles.AllowHexSpecifier);
-            var g = int.Parse(color.Substring(2, 2), NumberStyles.AllowHexSpecifier);
-            var b = int.Parse(color.Substring(4, 2), NumberStyles.AllowHexSpecifier);
-
             var result = "";
-            result += Math.Round(r / 255m, 2) + " ";
-            result += Math.Round(g / 255m, 2) + " ";
-            result += Math.Round(b / 255m, 2);
+            if (int.TryParse(color, NumberStyles.AllowHexSpecifier, null, out int value))
+            {
+                var r = int.Parse(color.Substring(0, 2), NumberStyles.AllowHexSpecifier);
+                var g = int.Parse(color.Substring(2, 2), NumberStyles.AllowHexSpecifier);
+                var b = int.Parse(color.Substring(4, 2), NumberStyles.AllowHexSpecifier);
+
+                result += Math.Round(r / 255m, 2) + " ";
+                result += Math.Round(g / 255m, 2) + " ";
+                result += Math.Round(b / 255m, 2);
+            }
+            else
+            {
+                // this means that the color could be in the form of a word
+                var systemColor = (Color)(new ColorConverter().ConvertFrom(color));
+
+                result += Math.Round(systemColor.R / 255m, 2) + " ";
+                result += Math.Round(systemColor.G / 255m, 2) + " ";
+                result += Math.Round(systemColor.B / 255m, 2);
+            }
 
             return result;
         }
