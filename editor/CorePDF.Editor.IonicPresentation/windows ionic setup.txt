@@ -1,0 +1,18 @@
+http://ionicframework.com/docs/v1/guide/installation.html
+
+windows setup:
+1. follow these instructions: https://ionicframework.com/docs/developer-resources/platform-setup/windows-setup.html
+2. add %GRADLE_HOME% to the path environment variable
+2. 'npm install -g cordova ionic'      If this fails delete %appdata%/npm and %appdata%/npm-cache
+3. 'ionic start <projectname> <projecttype>' (type 'ionic start' by itself and follow the wizard)
+4. 'cd <projectname>'
+5. 'ionic serve' (to show it working in web) or 'ionic serve --lab' to show on particular device dimensions.
+
+live reload on device: https://ionicframework.com/docs/cli/cordova/run/
+'ionic cordova run android --livereload'
+
+if this previous command fails with an error about the package already existing and that it cannot update it:
+'adb uninstall my.package.id' (usually io.ionic.starter)
+
+Build an android apk (package)
+'ionic cordova build android' (this takes about 3 minutes)
