@@ -288,7 +288,7 @@ namespace CorePDF.Embeds
                                         position++;
                                         var ry = decimal.Parse(pathElements[position]); // y-radius
                                         position++;
-                                        var xRot = decimal.Parse(pathElements[position]); // x-rotation
+                                        var xRot = double.Parse(pathElements[position]); // x-rotation
                                         position++;
                                         var largeArc = int.Parse(pathElements[position]) == 1; // large-arc flag
                                         position++;
@@ -319,7 +319,7 @@ namespace CorePDF.Embeds
                                         var curvature = 0.55191502449m;
                                         if (!largeArc)
                                         {
-                                            // this path is the shorter of the two arc options
+                                            //this path is the shorter of the two arc options
                                             var xfactor = 0;
                                             var yfactor = 0;
 
@@ -371,6 +371,12 @@ namespace CorePDF.Embeds
 
                                             cx2 = posX + ((sweep ? rx - (curvature * rx) : 0m) * xfactor);
                                             cy2 = posY + ((sweep ? 0m : ry - (curvature * ry)) * yfactor);
+
+                                            var acx1 = startX;
+                                            var acy1 = startY + (ry * 4 / 3 * (decimal)Math.Tan(xRot / 4));
+
+                                            var acx2 = startX * (decimal)(Math.Cos(xRot) + 4 / 3 * Math.Tan(xRot / 4) * Math.Sin(xRot));
+                                            var acy2 = startY + (ry * (decimal)(Math.Sin(xRot) + 4 / 3 * Math.Tan(xRot / 4) * Math.Cos(xRot)));
 
                                             result.Paths.Add(new PDFPath("{0} {1} {2} {3} {4} {5} c\n", new List<PDFPathParam>()
                                             {

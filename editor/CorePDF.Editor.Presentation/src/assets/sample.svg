@@ -1,4 +1,4 @@
-<!--<?xml version="1.0" standalone="no"?>
+<?xml version="1.0" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
 <svg width="12cm" height="5.25cm" viewBox="0 0 1200 400" xmlns="http://www.w3.org/2000/svg" version="1.1">
   <title>Example arcs01 - arc commands in path data</title>
@@ -6,7 +6,7 @@
     Picture of a pie chart with two pie wedges and
     a picture of a line with arc blips
   </desc>
-  <rect x="1" y="1" width="1198" height="398"
+  <!--<rect x="1" y="1" width="1198" height="398"
         fill="none" stroke="blue" stroke-width="1" />
 
   <path d="M300,200 h-150 a150,150 0 1,0 150,-150 z"
@@ -16,13 +16,13 @@
         fill="green" stroke="blue" stroke-width="5" />
 
   <path d="M700,25 v150 a150,150 0 0,0 150,-150 z"
-        fill="green" stroke="blue" stroke-width="5" />
+        fill="green" stroke="blue" stroke-width="5" />-->
 
   <path d="M475,175 v-150 a150,150 0 0,0 -150,150 z"
         fill="yellow" stroke="blue" stroke-width="5" />
 
-  <path d="M275,175 v-150 a150,150 0 0,1 -150,150 z"
-        fill="yellow" stroke="blue" stroke-width="5" />
+  <!--<path d="M275,175 v-150 a150,150 0 0,1 -150,150 z"
+        fill="yellow" stroke="blue" stroke-width="5" />-->
 
   <path d="M600,350 l 50,-25 
            a25,25 -30 0,1 50,-25 l 50,-25 
@@ -30,8 +30,8 @@
            a25,75 -30 0,1 50,-25 l 50,-25 
            a25,100 -30 0,1 50,-25 l 50,-25"
         fill="none" stroke="red" stroke-width="5"  />
-</svg>-->
-<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 581.1 311.81" style="background: #000;">
+</svg>
+<!--<svg id="Layer_1" data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 581.1 311.81" style="background: #000;">
   <defs>
     <style>
       .cls-1 {
@@ -48,7 +48,7 @@
   <path class="cls-1" d="M268.42,33.88l-121.5,247h242.5Zm-3.49,104,42.62,86.29H222.13Z"/>
   <polygon class="cls-2" points="282.52 62.64 201.44 224.88 227.82 224.88 295.62 89.21 282.52 62.64"/>
   <path class="cls-1" d="M554.29,149.86a100.48,100.48,0,1,0,.14,76.63c-6.37-2.59-36.69-14.84-50.9-21.06a44.79,44.79,0,1,1,.15-34.16Z"/>
-</svg>
+</svg>-->
 <!--<svg height="210" width="400">
     <path d="M0 0 L400 0 400 210 0 210 Z" />
     <path d="M150 0 L75 200 L225 200 Z" />
