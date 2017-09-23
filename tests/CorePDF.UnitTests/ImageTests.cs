@@ -125,8 +125,8 @@ namespace CorePDF.UnitTests
         }
 
         [Theory]
-        //[InlineData(0, 0, 25, 25, -30, 0, 0, 25, 25)]
-        [InlineData(50, 25, 25, 25, -30, 0, 1, 100, 50)]
+        //[InlineData(50, 25, 25, 25, -30, 0, 1, 100, 50)]
+        [InlineData(50, 25, 25, 25, -30, 0, 0, 100, 50)]
         public void CreateCubicBezier_fromArc_ExpectSuccess(decimal startX, decimal startY, decimal rx, decimal ry, double rotation, int longArc, int sweep, decimal endX, decimal endY)
         {
             var curvature = 0.55191502449m;
@@ -158,77 +158,157 @@ namespace CorePDF.UnitTests
                     curRY = radius;
                 }
 
-                // rotate the box 
-                rotation = rotation + (90 * count);
+                if (sweep == 0)
+                {
+                    // rotate the box 
+                    rotation = rotation - (90 * count);
 
-                // convert degress to radians
-                var radians = (rotation * Math.PI / 180f);
+                    // convert degress to radians
+                    var radians = (rotation * Math.PI / 180f);
 
-                // calculate the bounding box
+                    // calculate the bounding box
 
-                // bottom left corner
-                bounds.D.X = curX;
-                bounds.D.Y = curY;
+                    // top left corner (origin)
+                    bounds.D.X = curX;
+                    bounds.D.Y = curY;
 
-                // bottom right corner
-                bounds.C.X = bounds.D.X + (curRX * (decimal)Math.Cos(0 - radians));
-                bounds.C.Y = bounds.D.Y + (curRX * (decimal)Math.Sin(0 - radians));
+                    // top right corner
+                    bounds.C.X = bounds.D.X + (curRX * (decimal)Math.Cos(0 - radians));
+                    bounds.C.Y = bounds.D.Y + (curRX * (decimal)Math.Sin(0 - radians));
 
-                // top left corner
-                bounds.A.X = bounds.D.X + (curRY * (decimal)Math.Sin(radians));
-                bounds.A.Y = bounds.D.Y + (curRY * (decimal)Math.Cos(0 - radians));
+                    // bottom left corner
+                    bounds.A.X = bounds.D.X - (curRY * (decimal)Math.Sin(radians));
+                    bounds.A.Y = bounds.D.Y - (curRY * (decimal)Math.Cos(radians));
 
-                // top right corner
-                bounds.B.X = bounds.A.X + (curRX * (decimal)Math.Cos(0 - radians));
-                bounds.B.Y = bounds.A.Y + (curRX * (decimal)Math.Sin(0 - radians));
+                    // bottom right corner (target)
+                    bounds.B.X = bounds.A.X + (curRX * (decimal)Math.Cos(0 - radians));
+                    bounds.B.Y = bounds.A.Y + (curRX * (decimal)Math.Sin(0 - radians));
 
-                var path = string.Format("<path fill='none' stroke='green' d='M {0} {1} L {2} {3} {4} {5} {6} {7} z'/>\n", 
-                    bounds.D.X + 200, 
-                    200 - bounds.D.Y,
-                    bounds.C.X + 200,
-                    200 - bounds.C.Y,
-                    bounds.B.X + 200,
-                    200 - bounds.B.Y,
-                    bounds.A.X + 200,
-                    200 - bounds.A.Y
-                    );
+                    var path = string.Format("<path fill='none' stroke='orange' d='M {0} {1} L {2} {3} {4} {5} {6} {7} z'/>\n",
+                        bounds.D.X + 200,
+                        200 - bounds.D.Y,
+                        bounds.C.X + 200,
+                        200 - bounds.C.Y,
+                        bounds.B.X + 200,
+                        200 - bounds.B.Y,
+                        bounds.A.X + 200,
+                        200 - bounds.A.Y
+                        );
 
-                // Calculate the control points (two of these will be used depending on the sweep and the direction)
+                    // Calculate the control points (two of these will be used depending on the sweep and the direction)
 
-                // control point 1
-                var cpX1 = bounds.D.X + ((curRY * curvature) * (decimal)Math.Sin(radians));
-                var cpY1 = bounds.D.Y + ((curRY * curvature) * (decimal)Math.Cos(0 - radians));
+                    // control point 1
+                    var cpX1 = bounds.D.X - ((curRY * curvature) * (decimal)Math.Sin(radians));
+                    var cpY1 = bounds.D.Y - ((curRY * curvature) * (decimal)Math.Cos(0 - radians));
 
-                // control point 2
-                var cpX2 = bounds.A.X + ((curRX - (curRX * curvature)) * (decimal)Math.Cos(0 - radians));
-                var cpY2 = bounds.A.Y + ((curRX - (curRX * curvature)) * (decimal)Math.Sin(0 - radians));
+                    // control point 2
+                    var cpX2 = bounds.A.X + ((curRX - (curRX * curvature)) * (decimal)Math.Cos(0 - radians));
+                    var cpY2 = bounds.A.Y + ((curRX - (curRX * curvature)) * (decimal)Math.Sin(0 - radians));
 
-                // control point 3
-                var cpX3 = bounds.D.X + ((curRX * curvature) * (decimal)Math.Cos(0 - radians));
-                var cpY3 = bounds.D.Y + ((curRX * curvature) * (decimal)Math.Sin(0 - radians));
+                    // control point 3
+                    var cpX3 = bounds.D.X + ((curRX * curvature) * (decimal)Math.Cos(0 - radians));
+                    var cpY3 = bounds.D.Y + ((curRX * curvature) * (decimal)Math.Sin(0 - radians));
 
-                // control point 4
-                var cpX4 = bounds.C.X + ((curRY - (curRY * curvature)) * (decimal)Math.Sin(radians));
-                var cpY4 = bounds.C.Y + ((curRY - (curRY * curvature)) * (decimal)Math.Cos(0 - radians));
+                    // control point 4
+                    var cpX4 = bounds.B.X + ((curRY - (curRY * curvature)) * (decimal)Math.Sin(radians));
+                    var cpY4 = bounds.B.Y + ((curRY - (curRY * curvature)) * (decimal)Math.Cos(0 - radians));
 
-                path += string.Format("<path stroke='blue' d='M {0} {1} v1'/>\n", cpX1 + 200, 200 - cpY1);
-                path += string.Format("<path stroke='blue' d='M {0} {1} v1'/>\n", cpX2 + 200, 200 - cpY2);
-                path += string.Format("<path stroke='blue' d='M {0} {1} v1'/>\n", cpX3 + 200, 200 - cpY3);
-                path += string.Format("<path stroke='blue' d='M {0} {1} v1'/>\n", cpX4 + 200, 200 - cpY4);
+                    path += string.Format("<path stroke='blue' d='M {0} {1} v1'/>\n", cpX1 + 200, 200 - cpY1);
+                    path += string.Format("<path stroke='blue' d='M {0} {1} v1'/>\n", cpX2 + 200, 200 - cpY2);
+                    path += string.Format("<path stroke='blue' d='M {0} {1} v1'/>\n", cpX3 + 200, 200 - cpY3);
+                    path += string.Format("<path stroke='blue' d='M {0} {1} v1'/>\n", cpX4 + 200, 200 - cpY4);
 
-                // calculate curve
-                path += string.Format("<path fill='none' stroke='yellow' d='M {0} {1} C {2} {3} {4} {5} {6} {7}' />",
-                    curX + 200,
-                    200 - curY,
-                    cpX1 + 200,
-                    200 - cpY1,
-                    cpX2 + 200,
-                    200 - cpY2,
-                    bounds.B.X + 200,
-                    200 - bounds.B.Y);
+                    // calculate curve
+                    path += string.Format("<path fill='none' stroke='yellow' d='M {0} {1} C {2} {3} {4} {5} {6} {7}' />",
+                        curX + 200,
+                        200 - curY,
+                        cpX1 + 200,
+                        200 - cpY1,
+                        cpX2 + 200,
+                        200 - cpY2,
+                        bounds.B.X + 200,
+                        200 - bounds.B.Y);
+                }
+
+                if (sweep == 1)
+                {
+
+
+                    // rotate the box 
+                    rotation = rotation + (90 * count);
+
+                    // convert degress to radians
+                    var radians = (rotation * Math.PI / 180f);
+
+                    // calculate the bounding box
+
+                    // bottom left corner (origin)
+                    bounds.D.X = curX;
+                    bounds.D.Y = curY;
+
+                    // bottom right corner
+                    bounds.C.X = bounds.D.X + (curRX * (decimal)Math.Cos(0 - radians));
+                    bounds.C.Y = bounds.D.Y + (curRX * (decimal)Math.Sin(0 - radians));
+
+                    // top left corner
+                    bounds.A.X = bounds.D.X + (curRY * (decimal)Math.Sin(radians));
+                    bounds.A.Y = bounds.D.Y + (curRY * (decimal)Math.Cos(0 - radians));
+
+                    // top right corner (target)
+                    bounds.B.X = bounds.A.X + (curRX * (decimal)Math.Cos(0 - radians));
+                    bounds.B.Y = bounds.A.Y + (curRX * (decimal)Math.Sin(0 - radians));
+
+                    var path = string.Format("<path fill='none' stroke='green' d='M {0} {1} L {2} {3} {4} {5} {6} {7} z'/>\n",
+                        bounds.D.X + 200,
+                        200 - bounds.D.Y,
+                        bounds.C.X + 200,
+                        200 - bounds.C.Y,
+                        bounds.B.X + 200,
+                        200 - bounds.B.Y,
+                        bounds.A.X + 200,
+                        200 - bounds.A.Y
+                        );
+
+                    // Calculate the control points (two of these will be used depending on the sweep and the direction)
+
+                    // control point 1
+                    var cpX1 = bounds.D.X + ((curRY * curvature) * (decimal)Math.Sin(radians));
+                    var cpY1 = bounds.D.Y + ((curRY * curvature) * (decimal)Math.Cos(0 - radians));
+
+                    // control point 2
+                    var cpX2 = bounds.A.X + ((curRX - (curRX * curvature)) * (decimal)Math.Cos(0 - radians));
+                    var cpY2 = bounds.A.Y + ((curRX - (curRX * curvature)) * (decimal)Math.Sin(0 - radians));
+
+                    // control point 3
+                    var cpX3 = bounds.D.X + ((curRX * curvature) * (decimal)Math.Cos(0 - radians));
+                    var cpY3 = bounds.D.Y + ((curRX * curvature) * (decimal)Math.Sin(0 - radians));
+
+                    // control point 4
+                    var cpX4 = bounds.C.X + ((curRY - (curRY * curvature)) * (decimal)Math.Sin(radians));
+                    var cpY4 = bounds.C.Y + ((curRY - (curRY * curvature)) * (decimal)Math.Cos(0 - radians));
+
+                    path += string.Format("<path stroke='blue' d='M {0} {1} v1'/>\n", cpX1 + 200, 200 - cpY1);
+                    path += string.Format("<path stroke='blue' d='M {0} {1} v1'/>\n", cpX2 + 200, 200 - cpY2);
+                    path += string.Format("<path stroke='blue' d='M {0} {1} v1'/>\n", cpX3 + 200, 200 - cpY3);
+                    path += string.Format("<path stroke='blue' d='M {0} {1} v1'/>\n", cpX4 + 200, 200 - cpY4);
+
+                    // calculate curve
+                    path += string.Format("<path fill='none' stroke='yellow' d='M {0} {1} C {2} {3} {4} {5} {6} {7}' />",
+                        curX + 200,
+                        200 - curY,
+                        cpX1 + 200,
+                        200 - cpY1,
+                        cpX2 + 200,
+                        200 - cpY2,
+                        bounds.B.X + 200,
+                        200 - bounds.B.Y);
+
+
+                }
 
                 curX = bounds.B.X;
                 curY = bounds.B.Y;
+
                 count++;
 
             } while (!PointInRectangle(new Point(endX, endY), bounds));
