@@ -6,23 +6,23 @@
     Picture of a pie chart with two pie wedges and
     a picture of a line with arc blips
   </desc>
-  <!--<rect x="1" y="1" width="1198" height="398"
+  <rect x="1" y="1" width="1198" height="398"
         fill="none" stroke="blue" stroke-width="1" />
 
   <path d="M300,200 h-150 a150,150 0 1,0 150,-150 z"
-        fill="red" stroke="blue" stroke-width="5" />
+        fill="red" stroke="blue" stroke-width="5" /> -->
 
-  <path d="M500,25 v150 a150,150 0 0,1 150,-150 z"
+ <!--<path d="M500,25 v150 a150,150 0 0,1 150,-150 z"
         fill="green" stroke="blue" stroke-width="5" />
 
   <path d="M700,25 v150 a150,150 0 0,0 150,-150 z"
-        fill="green" stroke="blue" stroke-width="5" />-->
+        fill="green" stroke="blue" stroke-width="5" />
 
   <path d="M475,175 v-150 a150,150 0 0,0 -150,150 z"
-        fill="yellow" stroke="blue" stroke-width="5" />
-
-  <!--<path d="M275,175 v-150 a150,150 0 0,1 -150,150 z"
         fill="yellow" stroke="blue" stroke-width="5" />-->
+
+  <path d="M275,175 v-150 a150,150 0 0,1 -150,150 z"
+        fill="yellow" stroke="blue" stroke-width="5" />
 
   <path d="M600,350 l 50,-25 
            a25,25 -30 0,1 50,-25 l 50,-25 
@@ -47,9 +47,10 @@
   <polygon class="cls-1" points="206.25 97.05 23.59 97.05 23.59 156.72 84.08 156.72 84.08 280.88 145.25 280.88 145.25 156.72 206.25 156.72 206.25 97.05"/>
   <path class="cls-1" d="M268.42,33.88l-121.5,247h242.5Zm-3.49,104,42.62,86.29H222.13Z"/>
   <polygon class="cls-2" points="282.52 62.64 201.44 224.88 227.82 224.88 295.62 89.21 282.52 62.64"/>
-  <path class="cls-1" d="M554.29,149.86a100.48,100.48,0,1,0,.14,76.63c-6.37-2.59-36.69-14.84-50.9-21.06a44.79,44.79,0,1,1,.15-34.16Z"/>
+  <path class="cls-1" d="M554.29,149.86a100.48,100.48,0,1,0,.14,76.63l-50.9-21.06a44.79,44.79,0,1,1,.15-34.16Z"/>
 </svg>-->
 <!--<svg height="210" width="400">
     <path d="M0 0 L400 0 400 210 0 210 Z" />
     <path d="M150 0 L75 200 L225 200 Z" />
-</svg>--> 
+</svg>-->
+

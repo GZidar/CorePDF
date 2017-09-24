@@ -4,6 +4,7 @@ using CorePDF.TypeFaces;
 using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Text;
+using System;
 
 namespace CorePDF.Contents
 {
@@ -65,7 +66,7 @@ namespace CorePDF.Contents
 
                         foreach (var parm in path.Parameters)
                         {
-                            parms[count] = parm.Value;
+                            parms[count] = Math.Round(parm.Value,5);
 
                             if (parm.Operation.Contains("*scale"))
                             {

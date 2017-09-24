@@ -238,6 +238,7 @@ namespace CorePDF.Embeds
                             // interpret the path
                             path = path.Replace(",", " ");
                             path = path.Replace("-", " -");
+                            path = path.Replace("-.", "-0.");
                             path = path.Replace("\n", " ");
                             path = path.Replace("\r", " ");
                             path = path.Replace("M", " M "); // Move To
@@ -284,18 +285,18 @@ namespace CorePDF.Embeds
                                     case "A":
                                     case "a":
                                         position++;
-                                        var rx = decimal.Parse(pathElements[position]); // x-radius
+                                        var rx = double.Parse(pathElements[position]); // x-radius
                                         position++;
-                                        var ry = decimal.Parse(pathElements[position]); // y-radius
+                                        var ry = double.Parse(pathElements[position]); // y-radius
                                         position++;
                                         var xRot = double.Parse(pathElements[position]); // x-rotation
                                         position++;
-                                        var largeArc = int.Parse(pathElements[position]) == 1; // large-arc flag
+                                        var largeArc = int.Parse(pathElements[position]); // large-arc flag
                                         position++;
-                                        var sweep = int.Parse(pathElements[position]) == 1; // sweep flag
+                                        var sweep = int.Parse(pathElements[position]); // sweep flag 
 
-                                        var startX = posX;
-                                        var startY = posY;
+                                        var startX = (double)posX;
+                                        var startY = (double)posY;
 
                                         // execute the elliptical arc command
                                         if (element == "a")
@@ -315,99 +316,57 @@ namespace CorePDF.Embeds
                                             posY = height - decimal.Parse(pathElements[position]);
                                         }
 
-                                        // todo: this needs to be converted to a cubic bezier curve path
-                                        var curvature = 0.55191502449m;
-                                        if (!largeArc)
-                                        {
-                                            //this path is the shorter of the two arc options
-                                            var xfactor = 0;
-                                            var yfactor = 0;
+                                        var endX = (double)posX;
+                                        var endY = (double)posY;
 
-                                            if (startX > posX && startY > posY)
+                                        if (endY > startY)
+                                        {
+                                            // swap the sweep flag around if large arc is specified
+                                            // because the y Axis is reversed 
+                                            if (sweep == 1)
                                             {
-                                                if (sweep)
-                                                {
-                                                    xfactor = 1;
-                                                    yfactor = -1;
-                                                }
-                                                else
-                                                {
-                                                    xfactor = -1;
-                                                    yfactor = 1;
-                                                }
-                                            }
-                                            else if (startX > posX)
-                                            {
-                                                if (!sweep)
-                                                {
-                                                    xfactor = -1;
-                                                    yfactor = 1;
-                                                }
-                                            }
-                                            else if (startY > posY)
-                                            {
-                                                if (!sweep)
-                                                {
-                                                    xfactor = 1;
-                                                    yfactor = -1;
-                                                }
+                                                sweep = 0;
                                             }
                                             else
                                             {
-                                                if (sweep)
-                                                {
-                                                    xfactor = -1;
-                                                    yfactor = 1;
-                                                }
-                                                else
-                                                {
-                                                    xfactor = 1;
-                                                    yfactor = -1;
-                                                }
+                                                sweep = 1;
                                             }
+                                        }
 
-                                            cx1 = startX + ((sweep ? 0m : rx - (curvature * rx)) * xfactor);
-                                            cy1 = startY + ((sweep ? ry - (curvature * ry) : 0) * yfactor);
+                                        var curves = ArcToBezier(new Point(startX, startY), new Point(endX, endY), rx, ry, xRot, largeArc, sweep);
 
-                                            cx2 = posX + ((sweep ? rx - (curvature * rx) : 0m) * xfactor);
-                                            cy2 = posY + ((sweep ? 0m : ry - (curvature * ry)) * yfactor);
-
-                                            var acx1 = startX;
-                                            var acy1 = startY + (ry * 4 / 3 * (decimal)Math.Tan(xRot / 4));
-
-                                            var acx2 = startX * (decimal)(Math.Cos(xRot) + 4 / 3 * Math.Tan(xRot / 4) * Math.Sin(xRot));
-                                            var acy2 = startY + (ry * (decimal)(Math.Sin(xRot) + 4 / 3 * Math.Tan(xRot / 4) * Math.Cos(xRot)));
-
+                                        foreach(var curve in curves)
+                                        {
                                             result.Paths.Add(new PDFPath("{0} {1} {2} {3} {4} {5} c\n", new List<PDFPathParam>()
                                             {
                                                 new PDFPathParam
                                                 {
-                                                    Value = cx1,
+                                                    Value = (decimal)curve.Cp1.X,
                                                     Operation = "+offsetX; *scale"
                                                 },
                                                 new PDFPathParam
                                                 {
-                                                    Value = cy1,
+                                                    Value = (decimal)curve.Cp1.Y,
                                                     Operation = "+offsetY; *scale"
                                                 },
                                                 new PDFPathParam
                                                 {
-                                                    Value = cx2,
+                                                    Value = (decimal)curve.Cp2.X,
                                                     Operation = "+offsetX; *scale"
                                                 },
                                                 new PDFPathParam
                                                 {
-                                                    Value = cy2,
+                                                    Value = (decimal)curve.Cp2.Y,
                                                     Operation = "+offsetY; *scale"
                                                 },
                                                 new PDFPathParam
                                                 {
-                                                    Value = posX,
+                                                    Value = (decimal)curve.End.X,
                                                     Operation = "+offsetX; *scale"
                                                 },
                                                 new PDFPathParam
                                                 {
-                                                    Value = posY,
+                                                    Value = (decimal)curve.End.Y,
                                                     Operation = "+offsetY; *scale"
                                                 }
                                             }));
@@ -452,7 +411,6 @@ namespace CorePDF.Embeds
 
                                         startPosX = posX;
                                         startPosY = posY;
-                                        inLineMode = false;
 
                                         break;
                                     case "Z":
@@ -471,7 +429,9 @@ namespace CorePDF.Embeds
                                                 Operation = "+offsetY; *scale"
                                             }
                                         }));
-                                        inLineMode = false;
+
+                                        posX = startPosX;
+                                        posY = startPosY;
 
                                         break;
                                     case "L":
@@ -932,6 +892,194 @@ namespace CorePDF.Embeds
                 MaskData.Publish(stream);
             }
         }
+
+        const double TAU = Math.PI * 2f;
+
+        private Point MapToEllipse(Point p, double rx, double ry, double cosphi, double sinphi, Point centrePos)
+        {
+            p.X *= rx;
+            p.Y *= ry;
+
+            var xp = (cosphi * p.X) - (sinphi * p.Y);
+            var yp = (sinphi * p.X) + (cosphi * p.Y);
+
+            return new Point(xp + centrePos.X, yp + centrePos.Y);
+        }
+
+        private List<Point> ApproximateUnitArc(double angle1, double angle2)
+        {
+            var alpha = 4f / 3f * Math.Tan(angle2 / 4f);
+
+            var x1 = Math.Cos(angle1);
+            var y1 = Math.Sin(angle1);
+            var x2 = Math.Cos(angle1 + angle2);
+            var y2 = Math.Sin(angle1 + angle2);
+
+            return new List<Point>
+            {
+                new Point(x1 - y1 * alpha, y1 + x1 * alpha),
+                new Point(x2 + y2 * alpha, y2 - x2 * alpha),
+                new Point(x2, y2)
+            };
+        }
+
+        private double UnitVectorAngle(Point u, Point v)
+        {
+            var sign = (u.X * v.Y - u.Y * v.X < 0) ? -1 : 1;
+
+            var umag = Math.Sqrt(u.X * u.X + u.Y * u.Y);
+            var vmag = Math.Sqrt(v.X * v.X + v.Y * v.Y);
+
+            var div = Dot(u, v) / (umag * vmag);
+
+            if (div > 1)
+            {
+                div = 1;
+            }
+            if (div < -1)
+            {
+                div = -1;
+            }
+
+            return sign * Math.Acos(div);
+        }
+
+        private Arc GetArcCentre(Point p, Point c, double rx, double ry, int largeArc, int sweep, double sinphi, double cosphi, Point pp)
+        {
+            var result = new Arc();
+
+            var rxsq = rx * rx;
+            var rysq = ry * ry;
+            var pxpsq = pp.X * pp.X;
+            var pypsq = pp.Y * pp.Y;
+
+            var radicant = (rxsq * rysq) - (rxsq * pypsq) - (rysq * pxpsq);
+            if (radicant < 0)
+            {
+                radicant = 0;
+            }
+
+            radicant /= (rxsq * pypsq) + (rysq * pxpsq);
+            radicant = Math.Sqrt(radicant) * (largeArc == sweep ? -1 : 1);
+
+            var centrep = new Point()
+            {
+                X = radicant * rx / ry * pp.Y,
+                Y = radicant * -ry / rx * pp.X
+            };
+
+            result.Centre.X = cosphi * centrep.X - sinphi * centrep.Y + (p.X + c.X) / 2;
+            result.Centre.Y = sinphi * centrep.X + cosphi * centrep.Y + (p.Y + c.Y) / 2;
+
+            var v1 = new Point()
+            {
+                X = (pp.X - centrep.X) / rx,
+                Y = (pp.Y - centrep.Y) / ry
+            };
+
+            var v2 = new Point()
+            {
+                X = (-pp.X - centrep.X) / rx,
+                Y = (-pp.Y - centrep.Y) / ry
+            };
+
+            result.Angle1 = UnitVectorAngle(new Point(1, 0), v1);
+            result.Angle2 = UnitVectorAngle(v1, v2);
+
+            if (sweep == 0 && result.Angle2 > 0)
+            {
+                result.Angle2 -= TAU;
+            }
+
+            if (sweep == 1 && result.Angle2 < 0)
+            {
+                result.Angle2 += TAU;
+            }
+
+            return result;
+        }
+
+        private List<Curve> ArcToBezier(Point p, Point c, double rx, double ry, double rotation = 0, int largeArc = 0, int sweep = 0)
+        {
+            var result = new List<Curve>();
+
+            // if either radius is zero do nothing
+            if (rx == 0 || ry == 0) return result;
+
+            var sinphi = Math.Sin(rotation * TAU / 360);
+            var cosphi = Math.Cos(rotation * TAU / 360);
+
+            var pp = new Point()
+            {
+                X = (cosphi * (p.X - c.X) / 2) + (sinphi * (p.Y - c.Y) / 2),
+                Y = (-sinphi * (p.X - c.X) / 2) + (cosphi * (p.Y - c.Y) / 2)
+            };
+
+            // the line isn't going anywhere since it's start and end psition are same
+            if (pp.X == 0 && pp.Y == 0) return result;
+
+            rx = Math.Abs(rx);
+            ry = Math.Abs(ry);
+
+            var lambda = ((pp.X * pp.X) / (rx * rx)) + ((pp.Y * pp.Y) / (ry * ry));
+            if (lambda > 1)
+            {
+                rx *= Math.Sqrt(lambda);
+                ry *= Math.Sqrt(lambda);
+            }
+
+            var arc = GetArcCentre(p, c, rx, ry, largeArc, sweep, sinphi, cosphi, pp);
+
+            var segments = Math.Max(Math.Ceiling(Math.Abs(arc.Angle2) / (TAU / 4)), 1);
+            arc.Angle2 /= segments;
+
+            for (var i = 0; i < segments; i++)
+            {
+                var approx = ApproximateUnitArc(arc.Angle1, arc.Angle2);
+                arc.Angle1 += arc.Angle2;
+
+                var cp1 = MapToEllipse(approx[0], rx, ry, cosphi, sinphi, arc.Centre);
+                var cp2 = MapToEllipse(approx[1], rx, ry, cosphi, sinphi, arc.Centre);
+                var end = MapToEllipse(approx[2], rx, ry, cosphi, sinphi, arc.Centre);
+
+                result.Add(new Curve()
+                {
+                    Cp1 = cp1,
+                    Cp2 = cp2,
+                    End = end
+                });
+            }
+
+            return result;
+        }
+
+        private bool PointInRectangle(Point m, Rectangle r)
+        {
+            var AB = Vector(r.A, r.B);
+            var AM = Vector(r.A, m);
+            var BC = Vector(r.B, r.C);
+            var BM = Vector(r.B, m);
+            var dotABAM = Dot(AB, AM);
+            var dotABAB = Dot(AB, AB);
+            var dotBCBM = Dot(BC, BM);
+            var dotBCBC = Dot(BC, BC);
+            return 0 <= dotABAM && dotABAM <= dotABAB && 0 <= dotBCBM && dotBCBM <= dotBCBC;
+        }
+
+        private Point Vector(Point p1, Point p2)
+        {
+            return new Point
+            {
+                X = (p2.X - p1.X),
+                Y = (p2.Y - p1.Y)
+            };
+        }
+
+        private double Dot(Point u, Point v)
+        {
+            return u.X * v.X + u.Y * v.Y;
+        }
+
     }
 
 }
