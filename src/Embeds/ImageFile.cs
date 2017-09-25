@@ -190,6 +190,11 @@ namespace CorePDF.Embeds
                         var result = new TokenisedSVG();
                         result.Paths.Add(new PDFPath("[] 0 d\n"));
 
+                        var posX = 0m;
+                        var posY = 0m;
+                        var startPosX = 0m;
+                        var startPosY = 0m;
+
                         while (paths.MoveNext())
                         {
                             var path = paths.Current.GetAttribute("d", "");
@@ -264,10 +269,6 @@ namespace CorePDF.Embeds
 
                             var pathElements = path.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                             var position = 0;
-                            var posX = 0m;
-                            var posY = 0m;
-                            var startPosX = 0m;
-                            var startPosY = 0m;
                             var inLineMode = false;
                             var relative = false;
 
@@ -319,10 +320,10 @@ namespace CorePDF.Embeds
                                         var endX = (double)posX;
                                         var endY = (double)posY;
 
-                                        if (endY > startY)
+                                        if ((endY > startY) || (endY < startY && largeArc == 1))
                                         {
-                                            // swap the sweep flag around if large arc is specified
-                                            // because the y Axis is reversed 
+                                            //swap the sweep flag around if large arc is specified
+                                            //because the y Axis is reversed
                                             if (sweep == 1)
                                             {
                                                 sweep = 0;
@@ -342,7 +343,7 @@ namespace CorePDF.Embeds
                                                 new PDFPathParam
                                                 {
                                                     Value = (decimal)curve.Cp1.X,
-                                                    Operation = "+offsetX; *scale"
+                                                    Operation = "+offsetX; *scale;"
                                                 },
                                                 new PDFPathParam
                                                 {
@@ -906,14 +907,14 @@ namespace CorePDF.Embeds
             return new Point(xp + centrePos.X, yp + centrePos.Y);
         }
 
-        private List<Point> ApproximateUnitArc(double angle1, double angle2)
+        private List<Point> ApproximateUnitArc(double theta, double delta)
         {
-            var alpha = 4f / 3f * Math.Tan(angle2 / 4f);
+            var alpha = 4f / 3f * Math.Tan(delta / 4f);
 
-            var x1 = Math.Cos(angle1);
-            var y1 = Math.Sin(angle1);
-            var x2 = Math.Cos(angle1 + angle2);
-            var y2 = Math.Sin(angle1 + angle2);
+            var x1 = Math.Cos(theta);
+            var y1 = Math.Sin(theta);
+            var x2 = Math.Cos(theta + delta);
+            var y2 = Math.Sin(theta + delta);
 
             return new List<Point>
             {
@@ -944,6 +945,19 @@ namespace CorePDF.Embeds
             return sign * Math.Acos(div);
         }
 
+        /// <summary>
+        ///  This calculates the centre of the arc based on the dimensions provided
+        /// </summary>
+        /// <param name="p"></param>
+        /// <param name="c"></param>
+        /// <param name="rx"></param>
+        /// <param name="ry"></param>
+        /// <param name="largeArc"></param>
+        /// <param name="sweep"></param>
+        /// <param name="sinphi"></param>
+        /// <param name="cosphi"></param>
+        /// <param name="pp"></param>
+        /// <returns></returns>
         private Arc GetArcCentre(Point p, Point c, double rx, double ry, int largeArc, int sweep, double sinphi, double cosphi, Point pp)
         {
             var result = new Arc();
@@ -960,7 +974,7 @@ namespace CorePDF.Embeds
             }
 
             radicant /= (rxsq * pypsq) + (rysq * pxpsq);
-            radicant = Math.Sqrt(radicant) * (largeArc == sweep ? -1 : 1);
+            radicant = Math.Sqrt(radicant) * (largeArc == sweep ? -1f : 1f);
 
             var centrep = new Point()
             {
@@ -968,8 +982,8 @@ namespace CorePDF.Embeds
                 Y = radicant * -ry / rx * pp.X
             };
 
-            result.Centre.X = cosphi * centrep.X - sinphi * centrep.Y + (p.X + c.X) / 2;
-            result.Centre.Y = sinphi * centrep.X + cosphi * centrep.Y + (p.Y + c.Y) / 2;
+            result.Centre.X = (cosphi * centrep.X) - (sinphi * centrep.Y) + (p.X + c.X) / 2f;
+            result.Centre.Y = (sinphi * centrep.X) + (cosphi * centrep.Y) + (p.Y + c.Y) / 2f;
 
             var v1 = new Point()
             {
@@ -999,6 +1013,17 @@ namespace CorePDF.Embeds
             return result;
         }
 
+        /// <summary>
+        /// Converts an svg arc to a cubic bezier
+        /// </summary>
+        /// <param name="p">The starting position</param>
+        /// <param name="c">The ending position</param>
+        /// <param name="rx">The radius on the x axis</param>
+        /// <param name="ry">The radius on the y axis</param>
+        /// <param name="rotation">The rotation of the arc on the x-axis</param>
+        /// <param name="largeArc">If the curve is to travel the long way between the two points</param>
+        /// <param name="sweep">If the curve is on the reducing angle or the increasing angle</param>
+        /// <returns></returns>
         private List<Curve> ArcToBezier(Point p, Point c, double rx, double ry, double rotation = 0, int largeArc = 0, int sweep = 0)
         {
             var result = new List<Curve>();
@@ -1006,13 +1031,13 @@ namespace CorePDF.Embeds
             // if either radius is zero do nothing
             if (rx == 0 || ry == 0) return result;
 
-            var sinphi = Math.Sin(rotation * TAU / 360);
-            var cosphi = Math.Cos(rotation * TAU / 360);
+            var sinphi = Math.Sin(rotation * TAU / 360f);
+            var cosphi = Math.Cos(rotation * TAU / 360f);
 
             var pp = new Point()
             {
-                X = (cosphi * (p.X - c.X) / 2) + (sinphi * (p.Y - c.Y) / 2),
-                Y = (-sinphi * (p.X - c.X) / 2) + (cosphi * (p.Y - c.Y) / 2)
+                X = (cosphi * (p.X - c.X) / 2f) + (sinphi * (p.Y - c.Y) / 2f),
+                Y = (-sinphi * (p.X - c.X) / 2f) + (cosphi * (p.Y - c.Y) / 2f)
             };
 
             // the line isn't going anywhere since it's start and end psition are same
@@ -1030,7 +1055,9 @@ namespace CorePDF.Embeds
 
             var arc = GetArcCentre(p, c, rx, ry, largeArc, sweep, sinphi, cosphi, pp);
 
-            var segments = Math.Max(Math.Ceiling(Math.Abs(arc.Angle2) / (TAU / 4)), 1);
+            // split the arc into multiple segments such that each segment covers 
+            // at most 90 degrees.
+            var segments = Math.Max(Math.Ceiling(Math.Abs(arc.Angle2) / (TAU / 4f)), 1);
             arc.Angle2 /= segments;
 
             for (var i = 0; i < segments; i++)
