@@ -198,34 +198,30 @@ namespace CorePDF.Embeds
                         while (paths.MoveNext())
                         {
                             var path = paths.Current.GetAttribute("d", "");
+                            var fill = "none";
+                            var strokeColor = "";
 
                             var style = paths.Current.GetAttribute("style", "");
                             if (string.IsNullOrEmpty(style))
                             {
-                                var fill = paths.Current.GetAttribute("fill", "");
-
-                                if (fill.ToLower() == "none")
+                                fill = paths.Current.GetAttribute("fill", "");
+                                if (string.IsNullOrEmpty(fill))
                                 {
-                                    // fill with white if shape is supposed to be hollow
-                                    result.Paths.Add(new PDFPath("1 1 1 rg\n"));
-                                }
-                                else
-                                {
-                                    if (! string.IsNullOrEmpty(fill))
-                                    {
-                                        result.Paths.Add(new PDFPath(string.Format("{0} rg\n", ToPDFColor(fill))));
-                                    }
+                                    fill = "none";
                                 }
 
-                                var strokeColor = paths.Current.GetAttribute("stroke", "");
-                                if (!string.IsNullOrEmpty(strokeColor))
+                                if (fill.ToLower() != "none")
                                 {
-                                    result.Paths.Add(new PDFPath(string.Format("{0} RG\n", ToPDFColor(strokeColor))));
+                                    result.Paths.Add(new PDFPath(string.Format("{0} rg\n", ToPDFColor(fill))));
                                 }
-                                else
+
+                                strokeColor = paths.Current.GetAttribute("stroke", "");
+                                if (string.IsNullOrEmpty(strokeColor))
                                 {
-                                    result.Paths.Add(new PDFPath("0 0 0 RG\n"));
+                                    strokeColor = "black";
                                 }
+
+                                result.Paths.Add(new PDFPath(string.Format("{0} RG\n", ToPDFColor(strokeColor))));
 
                                 var strokeWidth = 1m;
                                 if (!string.IsNullOrEmpty(paths.Current.GetAttribute("stroke-width", "")))
@@ -238,7 +234,6 @@ namespace CorePDF.Embeds
                             {
                                 // todo: handle css style interpretation here
                             }
-
 
                             // interpret the path
                             path = path.Replace(",", " ");
@@ -733,7 +728,21 @@ namespace CorePDF.Embeds
                                 position++;
                             }
 
-                            result.Paths.Add(new PDFPath("b\n"));
+                            if (fill != "none" && !string.IsNullOrEmpty(strokeColor))
+                            {
+                                // close, fill and stroke the path
+                                result.Paths.Add(new PDFPath("b\n"));
+                            }
+                            else if (!string.IsNullOrEmpty(strokeColor))
+                            {
+                                // just stroke the path
+                                result.Paths.Add(new PDFPath("S\n"));
+                            }
+                            else if (fill != "none")
+                            {
+                                // just fill the path
+                                result.Paths.Add(new PDFPath("f\n"));
+                            }
                         }
 
 
