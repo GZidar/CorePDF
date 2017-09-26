@@ -238,7 +238,7 @@ namespace CorePDF.Embeds
                             // interpret the path
                             path = path.Replace(",", " ");
                             path = path.Replace("-", " -");
-                            path = path.Replace("-.", "-0.");
+                            path = path.Replace("-.", "0 ");
                             path = path.Replace("\n", " ");
                             path = path.Replace("\r", " ");
                             path = path.Replace("M", " M "); // Move To
@@ -264,10 +264,7 @@ namespace CorePDF.Embeds
 
                             var pathElements = path.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                             var position = 0;
-                            var inLineMode = false;
-                            var relative = false;
 
-                            // TODO: polygons need to become paths
                             while (position < pathElements.Length)
                             {
                                 var cx1 = 0m;
@@ -280,81 +277,85 @@ namespace CorePDF.Embeds
                                 {
                                     case "A":
                                     case "a":
-                                        position++;
-                                        var rx = double.Parse(pathElements[position]); // x-radius
-                                        position++;
-                                        var ry = double.Parse(pathElements[position]); // y-radius
-                                        position++;
-                                        var xRot = double.Parse(pathElements[position]); // x-rotation
-                                        position++;
-                                        var largeArc = int.Parse(pathElements[position]); // large-arc flag
-                                        position++;
-                                        var sweep = int.Parse(pathElements[position]); // sweep flag 
-
-                                        var startX = (double)posX;
-                                        var startY = (double)(height - posY); // do not reverse the y co-ordinates until after the math has been done
-
-                                        // execute the elliptical arc command
-                                        if (element == "a")
+                                        // because it is possible for there to be one arc path after another this controll needs to 
+                                        // loop while there are still numbers after what is supposedly the last number
+                                        do
                                         {
-                                            // relative
                                             position++;
-                                            posX = posX + decimal.Parse(pathElements[position]);
+                                            var rx = double.Parse(pathElements[position]); // x-radius
                                             position++;
-                                            posY = posY + (0 - decimal.Parse(pathElements[position]));
-                                        }
-                                        else
-                                        {
-                                            // absolute
+                                            var ry = double.Parse(pathElements[position]); // y-radius
                                             position++;
-                                            posX = decimal.Parse(pathElements[position]);
+                                            var xRot = double.Parse(pathElements[position]); // x-rotation
                                             position++;
-                                            posY = height - decimal.Parse(pathElements[position]);
-                                        }
+                                            var largeArc = int.Parse(pathElements[position]); // large-arc flag
+                                            position++;
+                                            var sweep = int.Parse(pathElements[position]); // sweep flag 
 
-                                        var endX = (double)posX;
-                                        var endY = (double)(height - posY); // do not reverse the y co-ordinates until after the math has been done
+                                            var startX = (double)posX;
+                                            var startY = (double)(height - posY); // do not reverse the y co-ordinates until after the math has been done
 
-                                        var curves = ArcToBezier(new Point(startX, startY), new Point(endX, endY), rx, ry, xRot, largeArc, sweep);
-
-                                        foreach(var curve in curves)
-                                        {
-                                            result.Paths.Add(new PDFPath("{0} {1} {2} {3} {4} {5} c\n", new List<PDFPathParam>()
+                                            // execute the elliptical arc command
+                                            if (element == "a")
                                             {
-                                                new PDFPathParam
-                                                {
-                                                    Value = (decimal)curve.Cp1.X,
-                                                    Operation = "+offsetX; *scale;"
-                                                },
-                                                new PDFPathParam
-                                                {
-                                                    Value = height - (decimal)curve.Cp1.Y,
-                                                    Operation = "+offsetY; *scale"
-                                                },
-                                                new PDFPathParam
-                                                {
-                                                    Value = (decimal)curve.Cp2.X,
-                                                    Operation = "+offsetX; *scale"
-                                                },
-                                                new PDFPathParam
-                                                {
-                                                    Value = height - (decimal)curve.Cp2.Y,
-                                                    Operation = "+offsetY; *scale"
-                                                },
-                                                new PDFPathParam
-                                                {
-                                                    Value = (decimal)curve.End.X,
-                                                    Operation = "+offsetX; *scale"
-                                                },
-                                                new PDFPathParam
-                                                {
-                                                    Value = height - (decimal)curve.End.Y,
-                                                    Operation = "+offsetY; *scale"
-                                                }
-                                            }));
-                                        }
+                                                // relative
+                                                position++;
+                                                posX = posX + decimal.Parse(pathElements[position]);
+                                                position++;
+                                                posY = posY + (0 - decimal.Parse(pathElements[position]));
+                                            }
+                                            else
+                                            {
+                                                // absolute
+                                                position++;
+                                                posX = decimal.Parse(pathElements[position]);
+                                                position++;
+                                                posY = height - decimal.Parse(pathElements[position]);
+                                            }
 
-                                        inLineMode = false;
+                                            var endX = (double)posX;
+                                            var endY = (double)(height - posY); // do not reverse the y co-ordinates until after the math has been done
+
+                                            var curves = ArcToBezier(new Point(startX, startY), new Point(endX, endY), rx, ry, xRot, largeArc, sweep);
+
+                                            foreach (var curve in curves)
+                                            {
+                                                result.Paths.Add(new PDFPath("{0} {1} {2} {3} {4} {5} c\n", new List<PDFPathParam>()
+                                                {
+                                                    new PDFPathParam
+                                                    {
+                                                        Value = (decimal)curve.Cp1.X,
+                                                        Operation = "+offsetX; *scale;"
+                                                    },
+                                                    new PDFPathParam
+                                                    {
+                                                        Value = height - (decimal)curve.Cp1.Y,
+                                                        Operation = "+offsetY; *scale"
+                                                    },
+                                                    new PDFPathParam
+                                                    {
+                                                        Value = (decimal)curve.Cp2.X,
+                                                        Operation = "+offsetX; *scale"
+                                                    },
+                                                    new PDFPathParam
+                                                    {
+                                                        Value = height - (decimal)curve.Cp2.Y,
+                                                        Operation = "+offsetY; *scale"
+                                                    },
+                                                    new PDFPathParam
+                                                    {
+                                                        Value = (decimal)curve.End.X,
+                                                        Operation = "+offsetX; *scale"
+                                                    },
+                                                    new PDFPathParam
+                                                    {
+                                                        Value = height - (decimal)curve.End.Y,
+                                                        Operation = "+offsetY; *scale"
+                                                    }
+                                                }));
+                                            }
+                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextArc));
+
                                         break;
 
                                     case "M":
@@ -419,110 +420,109 @@ namespace CorePDF.Embeds
                                     case "L":
                                     case "l":
                                         // execute the line-to command
-                                        if (element == "l")
-                                        {
-                                            // relative
-                                            position++;
-                                            posX = posX + decimal.Parse(pathElements[position]);
-                                            position++;
-                                            posY = posY + (0 - decimal.Parse(pathElements[position]));
-
-                                            relative = true;
-                                        }
-                                        else
-                                        {
-                                            // absolute
-                                            position++;
-                                            posX = decimal.Parse(pathElements[position]);
-                                            position++;
-                                            posY = height - decimal.Parse(pathElements[position]);
-                                        }
-
-                                        result.Paths.Add(new PDFPath("{0} {1} l\n", new List<PDFPathParam>()
-                                        {
-                                            new PDFPathParam
+                                        do
+                                        { 
+                                            if (element == "l")
                                             {
-                                                Value = posX,
-                                                Operation = "+offsetX; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = posY,
-                                                Operation = "+offsetY; *scale"
+                                                // relative
+                                                position++;
+                                                posX = posX + decimal.Parse(pathElements[position]);
+                                                position++;
+                                                posY = posY + (0 - decimal.Parse(pathElements[position]));
                                             }
-                                        }));
+                                            else
+                                            {
+                                                // absolute
+                                                position++;
+                                                posX = decimal.Parse(pathElements[position]);
+                                                position++;
+                                                posY = height - decimal.Parse(pathElements[position]);
+                                            }
 
-                                        inLineMode = true;
+                                            result.Paths.Add(new PDFPath("{0} {1} l\n", new List<PDFPathParam>()
+                                            {
+                                                new PDFPathParam
+                                                {
+                                                    Value = posX,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = posY,
+                                                    Operation = "+offsetY; *scale"
+                                                }
+                                            }));
+                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextLine)) ;
 
                                         break;
                                     case "H":
                                     case "h":
                                         // execute the line-to command
-                                        if (element == "h")
-                                        {
-                                            // relative
-                                            position++;
-                                            posX = posX + decimal.Parse(pathElements[position]);
-
-                                            relative = true;
-                                        }
-                                        else
-                                        {
-                                            // absolute
-                                            position++;
-                                            posX = decimal.Parse(pathElements[position]);
-                                        }
-
-                                        result.Paths.Add(new PDFPath("{0} {1} l\n", new List<PDFPathParam>()
-                                        {
-                                            new PDFPathParam
+                                        do
+                                        { 
+                                            if (element == "h")
                                             {
-                                                Value = posX,
-                                                Operation = "+offsetX; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = posY,
-                                                Operation = "+offsetY; *scale"
+                                                // relative
+                                                position++;
+                                                posX = posX + decimal.Parse(pathElements[position]);
                                             }
-                                        }));
+                                            else
+                                            {
+                                                // absolute
+                                                position++;
+                                                posX = decimal.Parse(pathElements[position]);
+                                            }
 
-                                        inLineMode = true;
+                                            result.Paths.Add(new PDFPath("{0} {1} l\n", new List<PDFPathParam>()
+                                            {
+                                                new PDFPathParam
+                                                {
+                                                    Value = posX,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = posY,
+                                                    Operation = "+offsetY; *scale"
+                                                }
+                                            }));
+                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextLine)) ;
 
                                         break;
                                     case "V":
                                     case "v":
                                         // execute the line-to command
-                                        if (element == "v")
+                                        do
                                         {
-                                            // relative
-                                            position++;
-                                            posY = posY + (0 - decimal.Parse(pathElements[position]));
-
-                                            relative = true;
-                                        }
-                                        else
-                                        {
-                                            // absolute
-                                            position++;
-                                            posY = height - decimal.Parse(pathElements[position]);
-                                        }
-
-                                        result.Paths.Add(new PDFPath("{0} {1} l\n", new List<PDFPathParam>()
-                                        {
-                                            new PDFPathParam
+                                            if (element == "v")
                                             {
-                                                Value = posX,
-                                                Operation = "+offsetX; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = posY,
-                                                Operation = "+offsetY; *scale"
+                                                // relative
+                                                position++;
+                                                posY = posY + (0 - decimal.Parse(pathElements[position]));
                                             }
-                                        }));
+                                            else
+                                            {
+                                                // absolute
+                                                position++;
+                                                posY = height - decimal.Parse(pathElements[position]);
+                                            }
 
-                                        inLineMode = true;
+                                            result.Paths.Add(new PDFPath("{0} {1} l\n", new List<PDFPathParam>()
+                                            {
+                                                new PDFPathParam
+                                                {
+                                                    Value = posX,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = posY,
+                                                    Operation = "+offsetY; *scale"
+                                                }
+                                            }));
+
+                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextLine));
+
                                         break;
 
                                     case "C":
@@ -691,37 +691,6 @@ namespace CorePDF.Embeds
                                         break;
 
                                     default:
-                                        // not a command so it must be a set of coordinates
-                                        if (inLineMode)
-                                        {
-                                            if (relative)
-                                            {
-                                                posX = posX + decimal.Parse(pathElements[position]);
-                                                position++;
-                                                posY = posY + (0 - decimal.Parse(pathElements[position]));
-                                            }
-                                            else
-                                            {
-                                                posX = decimal.Parse(pathElements[position]);
-                                                position++;
-                                                posY = height - decimal.Parse(pathElements[position]);
-                                            }
-
-                                            result.Paths.Add(new PDFPath("{0} {1} l\n", new List<PDFPathParam>()
-                                            {
-                                                new PDFPathParam
-                                                {
-                                                    Value = posX,
-                                                    Operation = "+offsetX; *scale"
-                                                },
-                                                new PDFPathParam
-                                                {
-                                                    Value = posY,
-                                                    Operation = "+offsetY; *scale"
-                                                }
-                                            }));
-
-                                        }
                                         break;
                                 }
 
