@@ -264,7 +264,7 @@ namespace CorePDF.Embeds
                             path = path.Replace("q", " q ");
                             path = path.Replace("T", " T "); // Smoothed QBC TODO
                             path = path.Replace("t", " t ");
-                            path = path.Replace("A", " A "); // Eliptical Arc TODO
+                            path = path.Replace("A", " A "); // Eliptical Arc
                             path = path.Replace("a", " a ");
 
                             var pathElements = path.Split(' ', StringSplitOptions.RemoveEmptyEntries);
@@ -297,7 +297,7 @@ namespace CorePDF.Embeds
                                         var sweep = int.Parse(pathElements[position]); // sweep flag 
 
                                         var startX = (double)posX;
-                                        var startY = (double)posY;
+                                        var startY = (double)(height - posY); // do not reverse the y co-ordinates until after the math has been done
 
                                         // execute the elliptical arc command
                                         if (element == "a")
@@ -318,21 +318,7 @@ namespace CorePDF.Embeds
                                         }
 
                                         var endX = (double)posX;
-                                        var endY = (double)posY;
-
-                                        if ((endY > startY) || (endY < startY && largeArc == 1))
-                                        {
-                                            //swap the sweep flag around if large arc is specified
-                                            //because the y Axis is reversed
-                                            if (sweep == 1)
-                                            {
-                                                sweep = 0;
-                                            }
-                                            else
-                                            {
-                                                sweep = 1;
-                                            }
-                                        }
+                                        var endY = (double)(height - posY); // do not reverse the y co-ordinates until after the math has been done
 
                                         var curves = ArcToBezier(new Point(startX, startY), new Point(endX, endY), rx, ry, xRot, largeArc, sweep);
 
@@ -347,7 +333,7 @@ namespace CorePDF.Embeds
                                                 },
                                                 new PDFPathParam
                                                 {
-                                                    Value = (decimal)curve.Cp1.Y,
+                                                    Value = height - (decimal)curve.Cp1.Y,
                                                     Operation = "+offsetY; *scale"
                                                 },
                                                 new PDFPathParam
@@ -357,7 +343,7 @@ namespace CorePDF.Embeds
                                                 },
                                                 new PDFPathParam
                                                 {
-                                                    Value = (decimal)curve.Cp2.Y,
+                                                    Value = height - (decimal)curve.Cp2.Y,
                                                     Operation = "+offsetY; *scale"
                                                 },
                                                 new PDFPathParam
@@ -367,7 +353,7 @@ namespace CorePDF.Embeds
                                                 },
                                                 new PDFPathParam
                                                 {
-                                                    Value = (decimal)curve.End.Y,
+                                                    Value = height - (decimal)curve.End.Y,
                                                     Operation = "+offsetY; *scale"
                                                 }
                                             }));
@@ -898,12 +884,15 @@ namespace CorePDF.Embeds
 
         private Point MapToEllipse(Point p, double rx, double ry, double cosphi, double sinphi, Point centrePos)
         {
+            // Scale back out by the radii
             p.X *= rx;
             p.Y *= ry;
 
+            // rotate back to orginial angles
             var xp = (cosphi * p.X) - (sinphi * p.Y);
             var yp = (sinphi * p.X) + (cosphi * p.Y);
 
+            // translate around the centre of the ellipse
             return new Point(xp + centrePos.X, yp + centrePos.Y);
         }
 
