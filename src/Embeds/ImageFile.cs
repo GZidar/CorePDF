@@ -320,6 +320,7 @@ namespace CorePDF.Embeds
                             var path = paths.Current.GetAttribute("d", "");
                             var fill = "none";
                             var strokeColor = "";
+                            var linecap = "";
 
                             var style = paths.Current.GetAttribute("style", "");
                             if (string.IsNullOrEmpty(style))
@@ -348,7 +349,32 @@ namespace CorePDF.Embeds
                                 {
                                     decimal.TryParse(paths.Current.GetAttribute("stroke-width", ""), out strokeWidth);
                                 }
-                                result.Paths.Add(new PDFPath(string.Format("{0} w\n", strokeWidth)));
+                                result.Paths.Add(new PDFPath("{0} w\n", new List<PDFPathParam>
+                                {
+                                    new PDFPathParam
+                                    {
+                                        Value = strokeWidth,
+                                        Operation = "*scale;"
+                                    }
+                                }
+                                ));
+
+                                linecap = paths.Current.GetAttribute("stroke-linecap", "");
+                                if (!string.IsNullOrEmpty(linecap))
+                                {
+                                    if (linecap.ToLower() == "butt")
+                                    {
+                                        result.Paths.Add(new PDFPath("0 J\n"));
+                                    }
+                                    if (linecap.ToLower() == "round")
+                                    {
+                                        result.Paths.Add(new PDFPath("1 J\n"));
+                                    }
+                                    if (linecap.ToLower() == "square")
+                                    {
+                                        result.Paths.Add(new PDFPath("2 J\n"));
+                                    }
+                                }
                             }
                             else
                             {
