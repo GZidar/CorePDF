@@ -44,8 +44,10 @@ namespace CorePDF.TypeFaces
                 new Barcode
                 {
                     CharacterSet = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\n\r",
-                    StartCharacter = "\n",
-                    StopCharacter = "\r",
+                    PreProcessor = (string input) =>
+                    {
+                        return string.Format("{0}{1}{2}", "\n", input, "\r");
+                    },
                     FontName = BARCODE128,
                     BaseFont = BARCODE128,
                     Metrics = new List<int>
@@ -165,8 +167,10 @@ namespace CorePDF.TypeFaces
                 new Barcode
                 {
                     CharacterSet = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ-. *+/$%",
-                    StartCharacter = "*",
-                    StopCharacter = "*",
+                    PreProcessor = (string input) =>
+                    {
+                        return string.Format("{0}{1}{0}", "*", input);
+                    },
                     FontName = BARCODE39,
                     BaseFont = BARCODE39,
                     Metrics = new List<int>

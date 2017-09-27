@@ -57,7 +57,8 @@ namespace CorePDF.Contents
 
             decimal curX = PosX;
             // Add the start/stop characters
-            var content = string.Format("{0}{1}{2}", contentFont.StartCharacter, Text, contentFont.StopCharacter);
+            var content = contentFont.PreProcessor(Text);
+            //var content = string.Format("{0}{1}{2}", contentFont.StartCharacter, Text, contentFont.StopCharacter);
             var stringLength = StringLength(content, FontSize, contentFont);
 
             switch (TextAlignment)
@@ -88,15 +89,18 @@ namespace CorePDF.Contents
 
             var textAreaStart = 0m;
             var textAreaWidth = 0m;
+            var count = 0;
 
             char[] cArray = content.ToUpper().ToCharArray();
             foreach (char c in cArray)
             {
+                count++;
+
                 var curY = (decimal)PosY;
                 var lineHeight = LineHeight;
                 if (ShowText)
                 {
-                    if (c.ToString() == contentFont.StopCharacter || c.ToString() == contentFont.StartCharacter)
+                    if (count == 1 || count == cArray.Length)
                     {
                         if (textAreaStart != 0)
                         {
@@ -130,7 +134,7 @@ namespace CorePDF.Contents
 
                 result += "S\n";
 
-                if (ShowText && c.ToString() == contentFont.StartCharacter)
+                if (ShowText && count == 1)
                 {
                     // Save the start position for the text value
                     if (textAreaStart == 0)
