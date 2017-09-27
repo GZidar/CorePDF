@@ -30,7 +30,7 @@ namespace CorePDF.Contents
             if (imageFile == null || imageFile.ByteData == null) return;
             var result = "";
 
-            if (imageFile.Rasterize)
+            if (imageFile.Type != ImageFile.PATHDATA)
             {
                 result = "q\n";
                 if (Height > 0 && Width > 0)

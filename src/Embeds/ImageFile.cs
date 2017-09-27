@@ -63,17 +63,31 @@ namespace CorePDF.Embeds
         [JsonIgnore] 
         public int Height { get; set; }
 
-        /// <summary>
-        /// Determines if a vector image should be rasterised for display
-        /// </summary>
-        public bool Rasterize { get; set; } = true;
-
         public void EmbedFile()
         {
             // do nothing if there is no valid file specified
             if (string.IsNullOrEmpty(FilePath) || !File.Exists(FilePath)) return;
 
-            if (!Rasterize)
+            var rasterize = true;
+
+            // attempt to load the image file into an xml document. If it works then this is 
+            // an svg file and needs to be parsed differently
+            using (var fileStream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
+            {
+                try
+                {
+                    var sourceSVG = new XmlDocument();
+                    sourceSVG.Load(fileStream);
+                    rasterize = false;
+                }
+                catch
+                {
+                    // any exception here means that this is not a valid SVG file
+                    rasterize = true;
+                }
+            }
+
+            if (!rasterize)
             {
                 using (var fileStream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
                 {
@@ -128,6 +142,19 @@ namespace CorePDF.Embeds
 
                         Height = (int)height;
                         Width = (int)width;
+
+                        // go through the file and get rid of any group elements
+                        var groups = nav.SelectChildren("g", svgns);
+                        do
+                        {
+                            while (groups.MoveNext())
+                            {
+                                var group = groups.Current.InnerXml;
+                                groups.Current.ReplaceSelf(group);
+                            }
+
+                            groups = nav.SelectChildren("g", svgns);
+                        } while (groups.Count > 0);
 
                         // go through the polygons and convert them to paths
                         var polygons = nav.SelectChildren("polygon", svgns);
@@ -238,7 +265,7 @@ namespace CorePDF.Embeds
                             // interpret the path
                             path = path.Replace(",", " ");
                             path = path.Replace("-", " -");
-                            path = path.Replace("-.", "0 ");
+                            path = path.Replace("-.", "-0.");
                             path = path.Replace("\n", " ");
                             path = path.Replace("\r", " ");
                             path = path.Replace("M", " M "); // Move To
@@ -253,24 +280,26 @@ namespace CorePDF.Embeds
                             path = path.Replace("v", " v ");
                             path = path.Replace("C", " C "); // Cubic Bezier curve
                             path = path.Replace("c", " c ");
-                            path = path.Replace("S", " S "); // Smoothed CBC TODO
+                            path = path.Replace("S", " S "); // Smoothed CBC
                             path = path.Replace("s", " s ");
                             path = path.Replace("Q", " Q "); // Quadratic Bezier curve
                             path = path.Replace("q", " q ");
-                            path = path.Replace("T", " T "); // Smoothed QBC TODO
+                            path = path.Replace("T", " T "); // Smoothed QBC
                             path = path.Replace("t", " t ");
                             path = path.Replace("A", " A "); // Eliptical Arc
                             path = path.Replace("a", " a ");
 
                             var pathElements = path.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                             var position = 0;
+                            decimal? cx1 = null;
+                            decimal? cx2 = null;
+                            decimal? cy1 = null;
+                            decimal? cy2 = null;
+                            decimal? qx1 = null;
+                            decimal? qy1 = null;
 
                             while (position < pathElements.Length)
                             {
-                                var cx1 = 0m;
-                                var cx2 = 0m;
-                                var cy1 = 0m;
-                                var cy2 = 0m;
 
                                 var element = pathElements[position];
                                 switch (element)
@@ -394,6 +423,14 @@ namespace CorePDF.Embeds
 
                                         startPosX = posX;
                                         startPosY = posY;
+
+                                        // reset the control points
+                                        cx1 = null;
+                                        cy1 = null;
+                                        cx2 = null;
+                                        cy2 = null;
+                                        qx1 = null;
+                                        qy1 = null;
 
                                         break;
                                     case "Z":
@@ -528,168 +565,347 @@ namespace CorePDF.Embeds
                                     case "C":
                                     case "c":
                                         // execute the cubic bezier command
-
-                                        if (element == "c")
+                                        do
                                         {
-                                            // relative
-                                            position++;
-                                            cx1 = posX + decimal.Parse(pathElements[position]);
-                                            position++;
-                                            cy1 = posY + (0 - decimal.Parse(pathElements[position]));
+                                            if (element == "c")
+                                            {
+                                                // relative
+                                                position++;
+                                                cx1 = posX + decimal.Parse(pathElements[position]);
+                                                position++;
+                                                cy1 = posY + (0 - decimal.Parse(pathElements[position]));
 
-                                            position++;
-                                            cx2 = posX + decimal.Parse(pathElements[position]);
-                                            position++;
-                                            cy2 = posY + (0 - decimal.Parse(pathElements[position]));
+                                                position++;
+                                                cx2 = posX + decimal.Parse(pathElements[position]);
+                                                position++;
+                                                cy2 = posY + (0 - decimal.Parse(pathElements[position]));
 
-                                            position++;
-                                            posX = posX + decimal.Parse(pathElements[position]);
-                                            position++;
-                                            posY = posY + (0 - decimal.Parse(pathElements[position]));
-                                        }
-                                        else
-                                        {
-                                            // absolute
-                                            position++;
-                                            cx1 = decimal.Parse(pathElements[position]);
-                                            position++;
-                                            cy1 = height - decimal.Parse(pathElements[position]);
-
-                                            position++;
-                                            cx2 = decimal.Parse(pathElements[position]);
-                                            position++;
-                                            cy2 = height - decimal.Parse(pathElements[position]);
-
-                                            position++;
-                                            posX = decimal.Parse(pathElements[position]);
-                                            position++;
-                                            posY = height - decimal.Parse(pathElements[position]);
-                                        }
-
-                                        result.Paths.Add(new PDFPath("{0} {1} {2} {3} {4} {5} c\n", new List<PDFPathParam>()
-                                        {
-                                            new PDFPathParam
-                                            {
-                                                Value = cx1,
-                                                Operation = "+offsetX; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = cy1,
-                                                Operation = "+offsetY; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = cx2,
-                                                Operation = "+offsetX; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = cy2,
-                                                Operation = "+offsetY; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = posX,
-                                                Operation = "+offsetX; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = posY,
-                                                Operation = "+offsetY; *scale"
+                                                position++;
+                                                posX = posX + decimal.Parse(pathElements[position]);
+                                                position++;
+                                                posY = posY + (0 - decimal.Parse(pathElements[position]));
                                             }
-                                        }));
+                                            else
+                                            {
+                                                // absolute
+                                                position++;
+                                                cx1 = decimal.Parse(pathElements[position]);
+                                                position++;
+                                                cy1 = height - decimal.Parse(pathElements[position]);
+
+                                                position++;
+                                                cx2 = decimal.Parse(pathElements[position]);
+                                                position++;
+                                                cy2 = height - decimal.Parse(pathElements[position]);
+
+                                                position++;
+                                                posX = decimal.Parse(pathElements[position]);
+                                                position++;
+                                                posY = height - decimal.Parse(pathElements[position]);
+                                            }
+
+                                            result.Paths.Add(new PDFPath("{0} {1} {2} {3} {4} {5} c\n", new List<PDFPathParam>()
+                                            {
+                                                new PDFPathParam
+                                                {
+                                                    Value = cx1.Value,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = cy1.Value,
+                                                    Operation = "+offsetY; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = cx2.Value,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = cy2.Value,
+                                                    Operation = "+offsetY; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = posX,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = posY,
+                                                    Operation = "+offsetY; *scale"
+                                                }
+                                            }));
+                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextCurve));
+
+                                        break;
+
+                                    case "S":
+                                    case "s":
+                                        // execute the smoothed cubic bezier command
+                                        do
+                                        {
+                                            // calculate the first control point. This is assumed to be the reflection of the second control point
+                                            // of the previous command (assuming the previous command was a C/c or S/s. 
+                                            if (cx2 != null && cy2 != null)
+                                            {
+                                                var diffX = posX - cx2;
+                                                var diffY = posY - cy2;
+
+                                                cx1 = posX + diffX;
+                                                cy1 = posY + diffY;
+                                            }
+
+                                            if (element == "s")
+                                            {
+                                                // relative
+                                                position++;
+                                                cx2 = posX + decimal.Parse(pathElements[position]);
+                                                position++;
+                                                cy2 = posY + (0 - decimal.Parse(pathElements[position]));
+
+                                                position++;
+                                                posX = posX + decimal.Parse(pathElements[position]);
+                                                position++;
+                                                posY = posY + (0 - decimal.Parse(pathElements[position]));
+                                            }
+                                            else
+                                            {
+                                                // absolute
+                                                position++;
+                                                cx2 = decimal.Parse(pathElements[position]);
+                                                position++;
+                                                cy2 = height - decimal.Parse(pathElements[position]);
+
+                                                position++;
+                                                posX = decimal.Parse(pathElements[position]);
+                                                position++;
+                                                posY = height - decimal.Parse(pathElements[position]);
+                                            }
+
+                                            // If there was no previous curve command then the control point is coincident with 
+                                            // the current control point
+                                            if (cx1 == null && cy1 == null)
+                                            {
+                                                cx1 = cx2;
+                                                cy1 = cy2;
+                                            }
+
+                                            result.Paths.Add(new PDFPath("{0} {1} {2} {3} {4} {5} c\n", new List<PDFPathParam>()
+                                            {
+                                                new PDFPathParam
+                                                {
+                                                    Value = cx1.Value,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = cy1.Value,
+                                                    Operation = "+offsetY; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = cx2.Value,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = cy2.Value,
+                                                    Operation = "+offsetY; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = posX,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = posY,
+                                                    Operation = "+offsetY; *scale"
+                                                }
+                                            }));
+                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextCurve));
 
                                         break;
 
                                     case "Q":
                                     case "q":
                                         // execute the quadratic bezier command
-                                        var qx1 = 0m;
-                                        var qy1 = 0m;
-                                        var x1 = 0m;
-                                        var x2 = 0m;
-                                        var y1 = 0m;
-                                        var y2 = 0m;
-
-                                        if (element == "q")
+                                        do
                                         {
-                                            // relative
-                                            position++;
-                                            qx1 = posX + decimal.Parse(pathElements[position]);
-                                            position++;
-                                            qy1 = posY + (0 - decimal.Parse(pathElements[position]));
+                                            var x1 = 0m;
+                                            var x2 = 0m;
+                                            var y1 = 0m;
+                                            var y2 = 0m;
 
-                                            // need to calculate the first cubic control points from start position 
-                                            // and the quadratic control point
-                                            x1 = posX + (2 / 3 * (qx1 - posX));
-                                            y1 = posY + (2 / 3 * (qy1 - posY));
+                                            if (element == "q")
+                                            {
+                                                // relative
+                                                position++;
+                                                qx1 = posX + decimal.Parse(pathElements[position]);
+                                                position++;
+                                                qy1 = posY + (0 - decimal.Parse(pathElements[position]));
 
-                                            position++;
-                                            posX = posX + decimal.Parse(pathElements[position]);
-                                            position++;
-                                            posY = posY + (0 - decimal.Parse(pathElements[position]));
-                                        }
-                                        else
-                                        {
-                                            // absolute
-                                            position++;
-                                            qx1 = decimal.Parse(pathElements[position]);
-                                            position++;
-                                            qy1 = height - decimal.Parse(pathElements[position]);
+                                                // need to calculate the first cubic control points from start position 
+                                                // and the quadratic control point
+                                                x1 = posX + (2m / 3m * (qx1.Value - posX));
+                                                y1 = posY + (2m / 3m * (qy1.Value - posY));
 
-                                            // need to calculate the first cubic control points from start position 
-                                            // and the quadratic control point
-                                            x1 = posX + (2 / 3 * (qx1 - posX));
-                                            y1 = posY + (2 / 3 * (qy1 - posY));
-
-                                            position++;
-                                            posX = decimal.Parse(pathElements[position]);
-                                            position++;
-                                            posY = height - decimal.Parse(pathElements[position]);
-                                        }
-
-                                        // need to calculate the second cubic control points from end position 
-                                        // and the quadratic control point
-                                        x2 = posX + (2 / 3 * (qx1 - posX));
-                                        y2 = posY + (2 / 3 * (qy1 - posY));
-
-                                        result.Paths.Add(new PDFPath("{0} {1} {2} {3} {4} {5} c\n", new List<PDFPathParam>()
-                                        {
-                                            new PDFPathParam
-                                            {
-                                                Value = x1,
-                                                Operation = "+offsetX; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = y1,
-                                                Operation = "+offsetY; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = x2,
-                                                Operation = "+offsetX; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = y2,
-                                                Operation = "+offsetY; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = posX,
-                                                Operation = "+offsetX; *scale"
-                                            },
-                                            new PDFPathParam
-                                            {
-                                                Value = posY,
-                                                Operation = "+offsetY; *scale"
+                                                position++;
+                                                posX = posX + decimal.Parse(pathElements[position]);
+                                                position++;
+                                                posY = posY + (0 - decimal.Parse(pathElements[position]));
                                             }
-                                        }));
+                                            else
+                                            {
+                                                // absolute
+                                                position++;
+                                                qx1 = decimal.Parse(pathElements[position]);
+                                                position++;
+                                                qy1 = height - decimal.Parse(pathElements[position]);
+
+                                                // need to calculate the first cubic control points from start position 
+                                                // and the quadratic control point
+                                                x1 = posX + (2m / 3m * (qx1.Value - posX));
+                                                y1 = posY + (2m / 3m * (qy1.Value - posY));
+
+                                                position++;
+                                                posX = decimal.Parse(pathElements[position]);
+                                                position++;
+                                                posY = height - decimal.Parse(pathElements[position]);
+                                            }
+
+                                            // need to calculate the second cubic control points from end position 
+                                            // and the quadratic control point
+                                            x2 = posX + (2m / 3m * (qx1.Value - posX));
+                                            y2 = posY + (2m / 3m * (qy1.Value - posY));
+
+                                            result.Paths.Add(new PDFPath("{0} {1} {2} {3} {4} {5} c\n", new List<PDFPathParam>()
+                                            {
+                                                new PDFPathParam
+                                                {
+                                                    Value = x1,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = y1,
+                                                    Operation = "+offsetY; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = x2,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = y2,
+                                                    Operation = "+offsetY; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = posX,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = posY,
+                                                    Operation = "+offsetY; *scale"
+                                                }
+                                            }));
+
+                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextCurve));
+
 
                                         break;
+                                    case "T":
+                                    case "t":
+                                        // execute the smoothed quadratic bezier command
+                                        do
+                                        {
+                                            var x1 = 0m;
+                                            var x2 = 0m;
+                                            var y1 = 0m;
+                                            var y2 = 0m;
 
+                                            // calculate the first control point. This is assumed to be the reflection of the second control point
+                                            // of the previous command (assuming the previous command was a Q/q or T/t. 
+                                            if (qx1 != null && qy1 != null)
+                                            {
+                                                var diffX = posX - qx1;
+                                                var diffY = posY - qy1;
+
+                                                qx1 = posX + diffX;
+                                                qy1 = posY + diffY;
+                                            }
+
+                                            // need to calculate the first cubic control points from start position 
+                                            // and the quadratic control point
+                                            x1 = posX + (2m / 3m * (qx1.Value - posX));
+                                            y1 = posY + (2m / 3m * (qy1.Value - posY));
+
+                                            if (element == "t")
+                                            {
+                                                // relative
+
+                                                position++;
+                                                posX = posX + decimal.Parse(pathElements[position]);
+                                                position++;
+                                                posY = posY + (0 - decimal.Parse(pathElements[position]));
+                                            }
+                                            else
+                                            {
+                                                // absolute
+
+                                                position++;
+                                                posX = decimal.Parse(pathElements[position]);
+                                                position++;
+                                                posY = height - decimal.Parse(pathElements[position]);
+                                            }
+
+                                            // need to calculate the second cubic control points from end position 
+                                            // and the quadratic control point
+                                            x2 = posX + (2m / 3m * (qx1.Value - posX));
+                                            y2 = posY + (2m / 3m * (qy1.Value - posY));
+
+                                            result.Paths.Add(new PDFPath("{0} {1} {2} {3} {4} {5} c\n", new List<PDFPathParam>()
+                                            {
+                                                new PDFPathParam
+                                                {
+                                                    Value = x1,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = y1,
+                                                    Operation = "+offsetY; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = x2,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = y2,
+                                                    Operation = "+offsetY; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = posX,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = posY,
+                                                    Operation = "+offsetY; *scale"
+                                                }
+                                            }));
+
+                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextCurve));
+
+                                        break;
                                     default:
                                         break;
                                 }
@@ -788,7 +1004,7 @@ namespace CorePDF.Embeds
 
         public override void PrepareStream(bool compress = false)
         {
-            if (Rasterize)
+            if (Type != PATHDATA)
             {
                 // only need to do this if the image has been rasterised
                 // if it hasn't then the file has already been encoded 
@@ -806,7 +1022,7 @@ namespace CorePDF.Embeds
 
         public override void Publish(StreamWriter stream)
         {
-            if (Rasterize)
+            if (Type != PATHDATA)
             {
                 // save the image data
                 var PDFData = new Dictionary<string, dynamic>

@@ -42,8 +42,7 @@ namespace CorePDF.IntegrationTests
                 new Embeds.ImageFile
                 {
                     Name = "vector",
-                    FilePath = "sample.svg",
-                    Rasterize = false
+                    FilePath = "sample.svg"
                 },
                 //new Embeds.ImageFile
                 //{
