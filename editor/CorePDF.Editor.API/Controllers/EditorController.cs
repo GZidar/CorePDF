@@ -56,7 +56,8 @@ namespace CorePDF.Editor.API.Controllers
                     FooterName = "footer-001",
                     Contents = new List<Content>()
                     {
-                        new Image()
+                        new Image(),
+                        new Barcode()
                     }
                 }
             };
