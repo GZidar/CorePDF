@@ -26,6 +26,9 @@ namespace CorePDF.Contents
             var result = "";
             var contentFont = fonts.Find(f => f.FontName == FontFace) as TypeFaces.Barcode;
 
+            // don't do anything if the font face isn't found
+            if (contentFont == null) return;
+
             if (ShowText && LineHeight <= FontSize)
             {
                 // increase the height of the barcode area to allow for the text to be shown
@@ -91,7 +94,7 @@ namespace CorePDF.Contents
             var textAreaWidth = 0m;
             var count = 0;
 
-            char[] cArray = content.ToUpper().ToCharArray();
+            char[] cArray = content.ToCharArray();
             foreach (char c in cArray)
             {
                 count++;

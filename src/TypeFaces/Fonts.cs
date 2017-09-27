@@ -46,7 +46,22 @@ namespace CorePDF.TypeFaces
                     CharacterSet = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\n\r",
                     PreProcessor = (string input) =>
                     {
-                        return string.Format("{0}{1}{2}", "\n", input, "\r");
+                        // code 128 has a check digit so this needs to be calculated prior to forming the barcode.
+                        // the check digit is appended after the input text prior to the stop character but it's
+                        // calculation includes the start character.
+                        var checktotal = 104; // this is the value of the code 128 B
+
+                        for (var i = 0; i < input.Length; i++)
+                        {
+                            var letter = Convert.ToChar(input[i]);
+                            var codeValue = letter - 32; // offset by the non-printable characters
+
+                            checktotal += (codeValue * (i+1));
+                        }
+
+                        var checkdigit = (checktotal % 103) + 32; // 103 is the value that all code 128 codes use
+
+                        return string.Format("{0}{1}{2}{3}", "\n", input, (char)checkdigit, "\r");
                     },
                     FontName = BARCODE128,
                     BaseFont = BARCODE128,
@@ -169,7 +184,8 @@ namespace CorePDF.TypeFaces
                     CharacterSet = "1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ-. *+/$%",
                     PreProcessor = (string input) =>
                     {
-                        return string.Format("{0}{1}{0}", "*", input);
+                        // only uppercase characters with an asterisk as the start and stop character
+                        return string.Format("{0}{1}{0}", "*", input.ToUpper());
                     },
                     FontName = BARCODE39,
                     BaseFont = BARCODE39,
@@ -195,7 +211,7 @@ namespace CorePDF.TypeFaces
                         "10100011011010",//"tt.TTt",
                         "11010100010110",//"Ttt.tT",
                         "10110100010110",//"tTt.tT",
-                        "10110100010110",//"TTt.tt",
+                        "11011010001010",//"TTt.tt",
                         "10101100010110",//"ttT.tT",
                         "11010110001010",//"TtT.tt",
                         "10110110001010",//"tTT.tt",
