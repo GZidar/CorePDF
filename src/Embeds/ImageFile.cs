@@ -2,8 +2,10 @@
 using Newtonsoft.Json;
 using SixLabors.ImageSharp;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Xml;
 using System.Xml.XPath;
@@ -147,6 +149,9 @@ namespace CorePDF.Embeds
                         var groups = nav.SelectChildren("g", svgns);
                         do
                         {
+                            // TODO: groups might have attributes like stroke or fill that will need to be
+                            // passed down into the children
+
                             while (groups.MoveNext())
                             {
                                 var group = groups.Current.InnerXml;
@@ -156,10 +161,53 @@ namespace CorePDF.Embeds
                             groups = nav.SelectChildren("g", svgns);
                         } while (groups.Count > 0);
 
+
+                        // TODO: Circle and Ellipse shape directives
+
+                        // go through the lines and convert these to paths
+                        var lines = nav.SelectChildren("line", svgns);
+                        while (lines.MoveNext())
+                        {
+                            var startX = lines.Current.GetAttribute("x1", "");
+                            var startY = lines.Current.GetAttribute("y1", "");
+                            var endX = lines.Current.GetAttribute("x2", "");
+                            var endY = lines.Current.GetAttribute("y2", "");
+
+                            var strokewidth = lines.Current.GetAttribute("stroke-width", "");
+                            var stroke = lines.Current.GetAttribute("stroke", "");
+
+                            var path = "M ";
+                            path += string.Format("{0} {1} L {2} {3}", startX, startY, endX, endY);
+
+                            lines.Current.ReplaceSelf(string.Format("<path d='{0}' {1} {2} />", path, stroke, strokewidth));
+                        }
+
                         // go through the polygons and convert them to paths
                         var polygons = nav.SelectChildren("polygon", svgns);
                         while (polygons.MoveNext())
                         {
+                            var fill = polygons.Current.GetAttribute("fill", "");
+                            if (string.IsNullOrEmpty(fill))
+                            {
+                                fill = "fill='none'";
+                            }
+                            else
+                            {
+                                fill = string.Format("fill='{0}'", fill);
+                            }
+
+                            var stroke = polygons.Current.GetAttribute("stroke", "");
+                            if (!string.IsNullOrEmpty(stroke))
+                            {
+                                stroke = string.Format("stroke='{0}'", stroke);
+                            }
+
+                            var strokewidth = polygons.Current.GetAttribute("stroke-width", "");
+                            if (!string.IsNullOrEmpty(strokewidth))
+                            {
+                                strokewidth = string.Format("stroke-width='{0}'", strokewidth);
+                            }
+
                             var polygon = polygons.Current.GetAttribute("points","");
                             polygon = polygon.Replace(",", " ");
 
@@ -176,7 +224,52 @@ namespace CorePDF.Embeds
                             }
                             path += "Z";
 
-                            polygons.Current.ReplaceSelf(string.Format("<path fill='none' d='{0}' />", path));
+                            polygons.Current.ReplaceSelf(string.Format("<path d='{0}' {1} {2} {3} />", path, fill, stroke, strokewidth));
+                        }
+
+                        // go through the polylines and convert them to paths. This is similar to
+                        // the polygon case but the path is not closed (no Z at the end)
+                        var polylines = nav.SelectChildren("polyline", svgns);
+                        while (polylines.MoveNext())
+                        {
+                            var fill = polygons.Current.GetAttribute("fill", "");
+                            if (string.IsNullOrEmpty(fill))
+                            {
+                                fill = "fill='none'";
+                            }
+                            else
+                            {
+                                fill = string.Format("fill='{0}'", fill);
+                            }
+
+                            var stroke = polygons.Current.GetAttribute("stroke", "");
+                            if (!string.IsNullOrEmpty(stroke))
+                            {
+                                stroke = string.Format("stroke='{0}'", stroke);
+                            }
+
+                            var strokewidth = polygons.Current.GetAttribute("stroke-width", "");
+                            if (!string.IsNullOrEmpty(strokewidth))
+                            {
+                                strokewidth = string.Format("stroke-width='{0}'", strokewidth);
+                            }
+
+                            var polyline = polygons.Current.GetAttribute("points", "");
+                            polyline = polyline.Replace(",", " ");
+
+                            var points = polyline.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                            var path = "M ";
+                            for (var i = 0; i < points.Length; i++)
+                            {
+                                if (i == 2)
+                                {
+                                    path += "L ";
+                                }
+
+                                path += points[i].ToString() + " ";
+                            }
+
+                            polylines.Current.ReplaceSelf(string.Format("<path d='{0}' {1} {2} {3}/>", path, fill, stroke, strokewidth));
                         }
 
                         // go through the rectangles and convert them to paths also
@@ -187,30 +280,30 @@ namespace CorePDF.Embeds
                             var startY = rects.Current.GetAttribute("y", "");
                             var rectWidth = rects.Current.GetAttribute("width", "");
                             var rectHeight = rects.Current.GetAttribute("width", "");
-                            var rectFill = rects.Current.GetAttribute("fill", "");
-                            if (string.IsNullOrEmpty(rectFill))
+                            var fill = rects.Current.GetAttribute("fill", "");
+                            if (string.IsNullOrEmpty(fill))
                             {
-                                rectFill = "fill='none'";
+                                fill = "fill='none'";
                             }
                             else
                             {
-                                rectFill = string.Format("fill='{0}'", rectFill);
+                                fill = string.Format("fill='{0}'", fill);
                             }
-                            var rectStroke = rects.Current.GetAttribute("stroke", "");
-                            if (!string.IsNullOrEmpty(rectStroke))
+                            var stroke = rects.Current.GetAttribute("stroke", "");
+                            if (!string.IsNullOrEmpty(stroke))
                             {
-                                rectStroke = string.Format("stroke='{0}'", rectStroke);
+                                stroke = string.Format("stroke='{0}'", stroke);
                             }
-                            var rectStrokeWidth = rects.Current.GetAttribute("stroke-width", "");
-                            if (!string.IsNullOrEmpty(rectStrokeWidth))
+                            var strokewidth = rects.Current.GetAttribute("stroke-width", "");
+                            if (!string.IsNullOrEmpty(strokewidth))
                             {
-                                rectStrokeWidth = string.Format("stroke-width='{0}'", rectStrokeWidth);
+                                strokewidth = string.Format("stroke-width='{0}'", strokewidth);
                             }
 
                             var path = "M ";
                             path += string.Format("{0} {1} h {2} v {3} h -{4} ", startX, startY, width, height, width);
                             path += "Z ";
-                            rects.Current.ReplaceSelf(string.Format("<path d='{0}' {1} {2} {3} />", path, rectFill, rectStroke, rectStrokeWidth));
+                            rects.Current.ReplaceSelf(string.Format("<path d='{0}' {1} {2} {3} />", path, fill, stroke, strokewidth));
                         }
 
                         var paths = nav.SelectChildren("path", svgns);
@@ -289,8 +382,28 @@ namespace CorePDF.Embeds
                             path = path.Replace("A", " A "); // Eliptical Arc
                             path = path.Replace("a", " a ");
 
-                            var pathElements = path.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                            var rawElements = path.Split(' ', StringSplitOptions.RemoveEmptyEntries);
                             var position = 0;
+
+                            // need to loop through the path elements and clean up any that might still look weird
+                            // svg allows path entries like M.50.11h10.50.78 which will result in some elements appearing 
+                            // to have two decimal places... these should be split into two numbers 
+                            // (eg: 10.50.78 becomes 10.50 & 0.78)
+                            var pathElements = new List<string>();
+                            for (var i = 0; i < rawElements.Length; i++)
+                            {
+                                var element = rawElements[i];
+                                if (element.Count(e => e == '.') > 1)
+                                {
+                                    var first = element.Substring(0, element.LastIndexOf('.'));
+                                    pathElements.Add(first);
+
+                                    element = "0" + element.Substring(element.LastIndexOf('.'));
+                                }
+
+                                pathElements.Add(element);
+                            }
+
                             decimal? cx1 = null;
                             decimal? cx2 = null;
                             decimal? cy1 = null;
@@ -298,7 +411,7 @@ namespace CorePDF.Embeds
                             decimal? qx1 = null;
                             decimal? qy1 = null;
 
-                            while (position < pathElements.Length)
+                            while (position < pathElements.Count)
                             {
 
                                 var element = pathElements[position];
@@ -383,7 +496,7 @@ namespace CorePDF.Embeds
                                                     }
                                                 }));
                                             }
-                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextArc));
+                                        } while ((position + 1 < pathElements.Count) && decimal.TryParse(pathElements[position + 1], out decimal nextArc));
 
                                         break;
 
@@ -489,7 +602,7 @@ namespace CorePDF.Embeds
                                                     Operation = "+offsetY; *scale"
                                                 }
                                             }));
-                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextLine)) ;
+                                        } while ((position + 1 < pathElements.Count) && decimal.TryParse(pathElements[position + 1], out decimal nextLine)) ;
 
                                         break;
                                     case "H":
@@ -523,7 +636,7 @@ namespace CorePDF.Embeds
                                                     Operation = "+offsetY; *scale"
                                                 }
                                             }));
-                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextLine)) ;
+                                        } while ((position + 1 < pathElements.Count) && decimal.TryParse(pathElements[position + 1], out decimal nextLine)) ;
 
                                         break;
                                     case "V":
@@ -558,7 +671,7 @@ namespace CorePDF.Embeds
                                                 }
                                             }));
 
-                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextLine));
+                                        } while ((position + 1 < pathElements.Count) && decimal.TryParse(pathElements[position + 1], out decimal nextLine));
 
                                         break;
 
@@ -637,7 +750,7 @@ namespace CorePDF.Embeds
                                                     Operation = "+offsetY; *scale"
                                                 }
                                             }));
-                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextCurve));
+                                        } while ((position + 1 < pathElements.Count) && decimal.TryParse(pathElements[position + 1], out decimal nextCurve));
 
                                         break;
 
@@ -725,7 +838,7 @@ namespace CorePDF.Embeds
                                                     Operation = "+offsetY; *scale"
                                                 }
                                             }));
-                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextCurve));
+                                        } while ((position + 1 < pathElements.Count) && decimal.TryParse(pathElements[position + 1], out decimal nextCurve));
 
                                         break;
 
@@ -815,7 +928,7 @@ namespace CorePDF.Embeds
                                                 }
                                             }));
 
-                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextCurve));
+                                        } while ((position + 1 < pathElements.Count) && decimal.TryParse(pathElements[position + 1], out decimal nextCurve));
 
 
                                         break;
@@ -903,7 +1016,7 @@ namespace CorePDF.Embeds
                                                 }
                                             }));
 
-                                        } while ((position + 1 < pathElements.Length) && decimal.TryParse(pathElements[position + 1], out decimal nextCurve));
+                                        } while ((position + 1 < pathElements.Count) && decimal.TryParse(pathElements[position + 1], out decimal nextCurve));
 
                                         break;
                                     default:
@@ -1076,7 +1189,10 @@ namespace CorePDF.Embeds
 
         const double TAU = Math.PI * 2f;
 
-        private Point MapToEllipse(Point p, double rx, double ry, double cosphi, double sinphi, Point centrePos)
+        /// <summary>
+        /// Maps the unit circle co-ordinates back to their original position, rotation and scales
+        /// </summary>
+        private Point MapBackToOriginal(Point p, double rx, double ry, double cosphi, double sinphi, Point centrePos)
         {
             // Scale back out by the radii
             p.X *= rx;
@@ -1131,15 +1247,15 @@ namespace CorePDF.Embeds
         /// <summary>
         ///  This calculates the centre of the arc based on the dimensions provided
         /// </summary>
-        /// <param name="p"></param>
-        /// <param name="c"></param>
-        /// <param name="rx"></param>
-        /// <param name="ry"></param>
-        /// <param name="largeArc"></param>
-        /// <param name="sweep"></param>
-        /// <param name="sinphi"></param>
-        /// <param name="cosphi"></param>
-        /// <param name="pp"></param>
+        /// <param name="p">Start position</param>
+        /// <param name="c">End position of the arc</param>
+        /// <param name="rx">Radius along x axis</param>
+        /// <param name="ry">Radius along w axis</param>
+        /// <param name="largeArc">take the long way around</param>
+        /// <param name="sweep">take the shorter path</param>
+        /// <param name="sinphi">calculated SIN of the rotation</param>
+        /// <param name="cosphi">calculated COS of the rotation</param>
+        /// <param name="pp">The translated and rotated position of the ellipse</param>
         /// <returns></returns>
         private Arc GetArcCentre(Point p, Point c, double rx, double ry, int largeArc, int sweep, double sinphi, double cosphi, Point pp)
         {
@@ -1150,19 +1266,19 @@ namespace CorePDF.Embeds
             var pxpsq = pp.X * pp.X;
             var pypsq = pp.Y * pp.Y;
 
-            var radicant = (rxsq * rysq) - (rxsq * pypsq) - (rysq * pxpsq);
-            if (radicant < 0)
+            var radicand = (rxsq * rysq) - (rxsq * pypsq) - (rysq * pxpsq);
+            if (radicand < 0)
             {
-                radicant = 0;
+                radicand = 0;
             }
 
-            radicant /= (rxsq * pypsq) + (rysq * pxpsq);
-            radicant = Math.Sqrt(radicant) * (largeArc == sweep ? -1f : 1f);
+            radicand /= (rxsq * pypsq) + (rysq * pxpsq);
+            radicand = Math.Sqrt(radicand) * (largeArc == sweep ? -1f : 1f);
 
             var centrep = new Point()
             {
-                X = radicant * rx / ry * pp.Y,
-                Y = radicant * -ry / rx * pp.X
+                X = radicand * rx / ry * pp.Y,
+                Y = radicand * -ry / rx * pp.X
             };
 
             result.Centre.X = (cosphi * centrep.X) - (sinphi * centrep.Y) + (p.X + c.X) / 2f;
@@ -1217,23 +1333,28 @@ namespace CorePDF.Embeds
             var sinphi = Math.Sin(rotation * TAU / 360f);
             var cosphi = Math.Cos(rotation * TAU / 360f);
 
+            // move the ellipse so that origin (ie 0,0) is at the midpoint between the 
+            // start point and the end point. Also rotate this so that the x and y
+            // axis are aligned with the grid
             var pp = new Point()
             {
                 X = (cosphi * (p.X - c.X) / 2f) + (sinphi * (p.Y - c.Y) / 2f),
                 Y = (-sinphi * (p.X - c.X) / 2f) + (cosphi * (p.Y - c.Y) / 2f)
             };
 
-            // the line isn't going anywhere since it's start and end psition are same
+            // If the start and end point of the arc are the same then do nothing
             if (pp.X == 0 && pp.Y == 0) return result;
 
             rx = Math.Abs(rx);
             ry = Math.Abs(ry);
 
-            var lambda = ((pp.X * pp.X) / (rx * rx)) + ((pp.Y * pp.Y) / (ry * ry));
-            if (lambda > 1)
+            // make sure that the radii are big enough. If not then these need
+            // to get scaled up to avoid rounding errors in subsequent calculations
+            var diff = ((pp.X * pp.X) / (rx * rx)) + ((pp.Y * pp.Y) / (ry * ry));
+            if (diff > 1)
             {
-                rx *= Math.Sqrt(lambda);
-                ry *= Math.Sqrt(lambda);
+                rx *= Math.Sqrt(diff);
+                ry *= Math.Sqrt(diff);
             }
 
             var arc = GetArcCentre(p, c, rx, ry, largeArc, sweep, sinphi, cosphi, pp);
@@ -1248,9 +1369,9 @@ namespace CorePDF.Embeds
                 var approx = ApproximateUnitArc(arc.Angle1, arc.Angle2);
                 arc.Angle1 += arc.Angle2;
 
-                var cp1 = MapToEllipse(approx[0], rx, ry, cosphi, sinphi, arc.Centre);
-                var cp2 = MapToEllipse(approx[1], rx, ry, cosphi, sinphi, arc.Centre);
-                var end = MapToEllipse(approx[2], rx, ry, cosphi, sinphi, arc.Centre);
+                var cp1 = MapBackToOriginal(approx[0], rx, ry, cosphi, sinphi, arc.Centre);
+                var cp2 = MapBackToOriginal(approx[1], rx, ry, cosphi, sinphi, arc.Centre);
+                var end = MapBackToOriginal(approx[2], rx, ry, cosphi, sinphi, arc.Centre);
 
                 result.Add(new Curve()
                 {
