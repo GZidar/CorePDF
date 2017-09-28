@@ -18,7 +18,7 @@ namespace CorePDF.Editor.API.Controllers
         {
             return new JsonResult(new
             {
-                ApplicationVersion = "0.2.1",
+                ApplicationVersion = "0.2.2",
                 ClientIPAddress = GetClientIPAddress(),
                 ServiceHost = GetServiceHost(),
                 ReferrerHost = GetReferrerHost()

@@ -145,6 +145,8 @@ namespace CorePDF.Embeds
                         Height = (int)height;
                         Width = (int)width;
 
+                        // TODO: handle transform attributes
+
                         // go through the file and get rid of any group elements
                         var groups = nav.SelectChildren("g", svgns);
                         do
@@ -161,8 +163,80 @@ namespace CorePDF.Embeds
                             groups = nav.SelectChildren("g", svgns);
                         } while (groups.Count > 0);
 
+                        var circles = nav.SelectChildren("circle", svgns);
+                        while (circles.MoveNext())
+                        {
+                            var cx = circles.Current.GetAttribute("cx", "");
+                            var cy = circles.Current.GetAttribute("cy", "");
+                            var radius = circles.Current.GetAttribute("r", "");
+                            var startX = decimal.Parse(cx) - decimal.Parse(radius);
+                            var diameter = decimal.Parse(radius) * 2;
 
-                        // TODO: Circle and Ellipse shape directives
+                            var strokewidth = circles.Current.GetAttribute("stroke-width", "");
+                            if (!string.IsNullOrEmpty(strokewidth))
+                            {
+                                strokewidth = string.Format("stroke-width='{0}'", strokewidth);
+                            }
+
+                            var stroke = circles.Current.GetAttribute("stroke", "");
+                            if (!string.IsNullOrEmpty(stroke))
+                            {
+                                stroke = string.Format("stroke='{0}'", stroke);
+                            }
+
+                            var fill = circles.Current.GetAttribute("fill", "");
+                            if (string.IsNullOrEmpty(fill))
+                            {
+                                fill = "fill='none'";
+                            }
+                            else
+                            {
+                                fill = string.Format("fill='{0}'", fill);
+                            }
+
+                            var path = "M ";
+                            path += string.Format("{0} {1} a {2} {2} 0 1 0 {3} 0 a {2} {2} 0 1 0 -{3} 0", startX, cy, radius, diameter);
+
+                            circles.Current.ReplaceSelf(string.Format("<path d='{0}' {1} {2} {3}/>", path, stroke, strokewidth, fill));
+                        }
+
+                        var ellipses = nav.SelectChildren("ellipse", svgns);
+                        while (ellipses.MoveNext())
+                        {
+                            var cx = ellipses.Current.GetAttribute("cx", "");
+                            var cy = ellipses.Current.GetAttribute("cy", "");
+                            var rx = ellipses.Current.GetAttribute("rx", "");
+                            var ry = ellipses.Current.GetAttribute("ry", "");
+                            var startX = decimal.Parse(cx) - decimal.Parse(rx);
+                            var dx = decimal.Parse(rx) * 2;
+
+                            var strokewidth = ellipses.Current.GetAttribute("stroke-width", "");
+                            if (!string.IsNullOrEmpty(strokewidth))
+                            {
+                                strokewidth = string.Format("stroke-width='{0}'", strokewidth);
+                            }
+
+                            var stroke = ellipses.Current.GetAttribute("stroke", "");
+                            if (!string.IsNullOrEmpty(stroke))
+                            {
+                                stroke = string.Format("stroke='{0}'", stroke);
+                            }
+
+                            var fill = ellipses.Current.GetAttribute("fill", "");
+                            if (string.IsNullOrEmpty(fill))
+                            {
+                                fill = "fill='none'";
+                            }
+                            else
+                            {
+                                fill = string.Format("fill='{0}'", fill);
+                            }
+
+                            var path = "M ";
+                            path += string.Format("{0} {1} a {2} {3} 0 1 0 {4} 0 a {2} {3} 0 1 0 -{4} 0", startX, cy, rx, ry, dx);
+
+                            ellipses.Current.ReplaceSelf(string.Format("<path d='{0}' {1} {2} {3}/>", path, stroke, strokewidth, fill));
+                        }
 
                         // go through the lines and convert these to paths
                         var lines = nav.SelectChildren("line", svgns);
@@ -336,12 +410,19 @@ namespace CorePDF.Embeds
                                     result.Paths.Add(new PDFPath(string.Format("{0} rg\n", ToPDFColor(fill))));
                                 }
 
+                                // todo: this is technically not correct... if there is no stroke there really should be no stroke
+                                // but this is here for now until the CSS/style type attributes are handled.
                                 strokeColor = paths.Current.GetAttribute("stroke", "");
                                 if (string.IsNullOrEmpty(strokeColor))
                                 {
-                                    strokeColor = "black";
+                                    // set it to match the fill color if there is no specific color
+                                    strokeColor = paths.Current.GetAttribute("fill", "");
+                                    if (string.IsNullOrEmpty(strokeColor))
+                                    {
+                                        // if it's still not specified set it to black
+                                        strokeColor = "black";
+                                    }
                                 }
-
                                 result.Paths.Add(new PDFPath(string.Format("{0} RG\n", ToPDFColor(strokeColor))));
 
                                 var strokeWidth = 1m;
@@ -349,15 +430,17 @@ namespace CorePDF.Embeds
                                 {
                                     decimal.TryParse(paths.Current.GetAttribute("stroke-width", ""), out strokeWidth);
                                 }
+
                                 result.Paths.Add(new PDFPath("{0} w\n", new List<PDFPathParam>
-                                {
-                                    new PDFPathParam
-                                    {
-                                        Value = strokeWidth,
-                                        Operation = "*scale;"
-                                    }
-                                }
+                                        {
+                                            new PDFPathParam
+                                            {
+                                                Value = strokeWidth,
+                                                Operation = "*scale;"
+                                            }
+                                        }
                                 ));
+
 
                                 linecap = paths.Current.GetAttribute("stroke-linecap", "");
                                 if (!string.IsNullOrEmpty(linecap))
