@@ -70,6 +70,19 @@ namespace CorePDF.Contents
                 result += "0 0 0 RG\n";
             }
 
+            switch (Stroke.Linecap)
+            {
+                case Linecap.Butt:
+                    result += "0 J\n";
+                    break;
+                case Linecap.Round:
+                    result += "1 J\n";
+                    break;
+                case Linecap.Square:
+                    result += "2 J\n";
+                    break;
+            }
+
             if (!string.IsNullOrEmpty(FillColor))
             {
                 result += string.Format("{0} rg\n", ToPDFColor(FillColor));
@@ -92,7 +105,7 @@ namespace CorePDF.Contents
              *   a      o      g    (h,i,j), and (k,l,a) in this diagram.
              *                      Assuming the pen is placed at location a to start off with the code
              *   l             h    will calculate the values of X & Y pairs in a clockwise direction
-             *      k   j   i       using the Roundedness constant (see above) and the hieght and width
+             *      k   j   i       using the Roundedness constant (see above) and the height and width
              *                      of the desired shape.
              */
 
@@ -170,6 +183,7 @@ namespace CorePDF.Contents
                 case Polygon.Line:
                     result += string.Format("{0} {1} m\n", PosX, PosY);
                     result += string.Format("{0} {1} l\n", PosX + Width, PosY + Height);
+
                     result += "S";
 
                     break;

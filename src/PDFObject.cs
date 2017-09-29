@@ -111,6 +111,11 @@ namespace CorePDF
             if (color.StartsWith("#"))
             {
                 color = color.Substring(1);
+                if (color.Length == 3)
+                {
+                    // if the hex color provided in short form turn it into long form
+                    color = string.Format("{0}{0}{1}{1}{2}{2}", color[0], color[1], color[2]);
+                }
             }
 
             var result = "";
