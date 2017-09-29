@@ -34,5 +34,10 @@ namespace CorePDF.Contents
         /// immediately.
         /// </summary>
         public string DashPattern { get; set; } = "";
+
+        /// <summary>
+        /// Speficies the way that the ends of the stroke are drawn.
+        /// </summary>
+        public Linecap Linecap { get; set; } = Linecap.Butt;
     }
 }
