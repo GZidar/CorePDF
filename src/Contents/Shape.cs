@@ -105,7 +105,7 @@ namespace CorePDF.Contents
              *   a      o      g    (h,i,j), and (k,l,a) in this diagram.
              *                      Assuming the pen is placed at location a to start off with the code
              *   l             h    will calculate the values of X & Y pairs in a clockwise direction
-             *      k   j   i       using the Roundedness constant (see above) and the hieght and width
+             *      k   j   i       using the Roundedness constant (see above) and the height and width
              *                      of the desired shape.
              */
 
