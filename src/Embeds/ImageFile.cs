@@ -144,6 +144,22 @@ namespace CorePDF.Embeds
 
                         Height = (int)height;
                         Width = (int)width;
+                        var Background = "";
+
+                        var overallStyle = nav.GetAttribute("style", "");
+                        if (!string.IsNullOrEmpty(overallStyle))
+                        {
+                            var styleElements = overallStyle.Split(';');
+                            foreach (var element in styleElements)
+                            {
+                                // split these further into attribute and value properties
+                                var parts = element.Split(':');
+                                if (parts[0].ToLower() == "background")
+                                {
+                                    Background = parts[1].Trim();
+                                }
+                            }
+                        }
 
                         // TODO: handle transform attributes
 
@@ -430,6 +446,65 @@ namespace CorePDF.Embeds
                         var result = new TokenisedSVG();
                         result.Paths.Add(new PDFPath("[] 0 d\n"));
 
+                        if (!string.IsNullOrEmpty(Background))
+                        {
+                            // there is a background color specified in the SVG
+                            result.Paths.Add(new PDFPath(string.Format("{0} rg\n", ToPDFColor(Background))));
+                            result.Paths.Add(new PDFPath("{0} {1} m\n", new List<PDFPathParam>()
+                                        {
+                                            new PDFPathParam
+                                            {
+                                                Value = 0,
+                                                Operation = "+offsetX; *scale"
+                                            },
+                                            new PDFPathParam
+                                            {
+                                                Value = 0,
+                                                Operation = "+offsetY; *scale"
+                                            }
+                                        }));
+                            result.Paths.Add(new PDFPath("{0} {1} l\n", new List<PDFPathParam>()
+                                            {
+                                                new PDFPathParam
+                                                {
+                                                    Value = 0,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = Height,
+                                                    Operation = "+offsetY; *scale"
+                                                }
+                                            }));
+                            result.Paths.Add(new PDFPath("{0} {1} l\n", new List<PDFPathParam>()
+                                            {
+                                                new PDFPathParam
+                                                {
+                                                    Value = Width,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = Height,
+                                                    Operation = "+offsetY; *scale"
+                                                }
+                                            }));
+                            result.Paths.Add(new PDFPath("{0} {1} l\n", new List<PDFPathParam>()
+                                            {
+                                                new PDFPathParam
+                                                {
+                                                    Value = Width,
+                                                    Operation = "+offsetX; *scale"
+                                                },
+                                                new PDFPathParam
+                                                {
+                                                    Value = 0,
+                                                    Operation = "+offsetY; *scale"
+                                                }
+                                            }));
+                            result.Paths.Add(new PDFPath("f\n"));
+                        }
+
                         var posX = 0m;
                         var posY = 0m;
                         var startPosX = 0m;
@@ -445,11 +520,6 @@ namespace CorePDF.Embeds
                             var style = paths.Current.GetAttribute("style", "");
                             if (!string.IsNullOrEmpty(style))
                             {
-                                if (!style.Contains(";"))
-                                {
-                                    //add a semi-colon to the end so that the split below will do something
-                                    style += ";";
-                                }
                                 var styleElements = style.Split(';');
                                 foreach (var element in styleElements)
                                 {
@@ -457,7 +527,16 @@ namespace CorePDF.Embeds
                                     var parts = element.Split(':');
 
                                     // can't add an attribute that already exists
-                                    paths.Current.CreateAttribute("", parts[0], "", parts[1]);
+                                    var value = paths.Current.GetAttribute(parts[0], "");
+                                    if (string.IsNullOrEmpty(value))
+                                    {
+                                        paths.Current.CreateAttribute("", parts[0], "", parts[1]);
+                                    }
+                                    else
+                                    {
+                                        var xml = paths.Current.OuterXml.Replace(parts[0] + "=\"" + value, parts[0] + "=\"" + parts[1]);
+                                        paths.Current.ReplaceSelf(xml);
+                                    }
                                 }
                             }
 
@@ -502,7 +581,6 @@ namespace CorePDF.Embeds
                                         }
                                     }
                             ));
-
 
                             linecap = paths.Current.GetAttribute("stroke-linecap", "");
                             if (!string.IsNullOrEmpty(linecap))
