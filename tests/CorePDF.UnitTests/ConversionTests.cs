@@ -30,7 +30,7 @@ namespace CorePDF.UnitTests
         {
             using (var filestream = new FileStream(_fileName, FileMode.Create, FileAccess.Write))
             {
-                var fileData = @"<svg xmlns=""http://www.w3.org/2000/svg"" viewBox=""0 0 400 400"">" + contents + "</svg>";
+                var fileData = @"<svg xmlns=""http://www.w3.org/2000/svg"" viewBox=""0 0 1000 1000"">" + contents + "</svg>";
                 filestream.Write(Encoding.UTF8.GetBytes(fileData), 0, fileData.Length);
                 filestream.Flush();
             }
@@ -59,12 +59,31 @@ namespace CorePDF.UnitTests
 
             // Assert
             Assert.Equal(ImageFile.PATHDATA, _sut.Type);
-            Assert.Equal(400, _sut.Height);
-            Assert.Equal(400, _sut.Width);
-            Assert.True(result.Paths.Any(p => p.ToString().Contains("50 350 m")));
-            Assert.True(result.Paths.Any(p => p.ToString().Contains("100 300 l")));
-            Assert.True(result.Paths.Any(p => p.ToString().Contains("150 300 l")));
-            Assert.True(result.Paths.Any(p => p.ToString().Contains("50 350 l")));
+            Assert.Equal(1000, _sut.Height);
+            Assert.Equal(1000, _sut.Width);
+            Assert.True(result.Paths.Any(p => p.ToString().Contains("50 950 m")));
+            Assert.True(result.Paths.Any(p => p.ToString().Contains("100 900 l")));
+            Assert.True(result.Paths.Any(p => p.ToString().Contains("150 900 l")));
+            Assert.True(result.Paths.Any(p => p.ToString().Contains("50 950 l")));
+        }
+
+        [Theory]
+        [InlineData("M100,200 C100,100 400,100 400,200", "100 800 m", "100 900 400 900 400 800 c")]
+        [InlineData("M100,500 C25,400 475,400 400,500", "100 500 m", "25 600 475 600 400 500 c")]
+        public void ConvertPath_CubicBezier_ExpectSuccess(string path, string position, string curve)
+        {
+            // Arrange
+            var content = string.Format(@"<path d=""{0}""/>", path);
+            createFile(content);
+            Assert.True(File.Exists(_fileName));
+
+            // Act
+            _sut.EmbedFile();
+            var result = JsonConvert.DeserializeObject<TokenisedSVG>(Encoding.UTF8.GetString(_sut.ByteData));
+
+            // Assert
+            Assert.True(result.Paths.Any(p => p.ToString().Contains(position)));
+            Assert.True(result.Paths.Any(p => p.ToString().Contains(curve)));
         }
     }
 }
