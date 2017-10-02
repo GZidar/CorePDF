@@ -20,6 +20,25 @@ namespace CorePDF.Embeds
 
             Parameters = args;
         }
+
+        public override string ToString()
+        {
+            if (Parameters == null || Parameters.Count == 0)
+            {
+                return Command;
+            }
+
+            var parms = new object[Parameters.Count];
+            var count = 0;
+
+            foreach (var parm in Parameters)
+            {
+                parms[count] = Math.Round(parm.Value, 5);
+                count++;
+            }
+
+            return string.Format(Command, parms);
+        }
     }
 
     public class PDFPathParam

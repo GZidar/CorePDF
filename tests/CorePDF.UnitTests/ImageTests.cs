@@ -123,5 +123,11 @@ namespace CorePDF.UnitTests
             Assert.True(lines.Any(l => l.Contains(imageDef)));
             Assert.True(lines.Any(l => l.Contains(placement)));
         }
+
+        [Fact]
+        public void ProcessSVG_ExpectSuccess()
+        {
+
+        }
     }
 }
