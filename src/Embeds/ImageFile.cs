@@ -65,6 +65,11 @@ namespace CorePDF.Embeds
         [JsonIgnore] 
         public int Height { get; set; }
 
+        protected FileStream Open()
+        {
+            return new FileStream(FilePath, FileMode.Open, FileAccess.Read);
+        }
+
         public void EmbedFile()
         {
             // do nothing if there is no valid file specified
@@ -74,7 +79,7 @@ namespace CorePDF.Embeds
 
             // attempt to load the image file into an xml document. If it works then this is 
             // an svg file and needs to be parsed differently
-            using (var fileStream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
+            using (var fileStream = Open())
             {
                 try
                 {
@@ -91,7 +96,7 @@ namespace CorePDF.Embeds
 
             if (!rasterize)
             {
-                using (var fileStream = new FileStream(FilePath, FileMode.Open, FileAccess.Read))
+                using (var fileStream = Open())
                 {
                     _encodedData = new byte[fileStream.Length];
                     fileStream.Read(_encodedData, 0, (int)fileStream.Length);
@@ -102,7 +107,6 @@ namespace CorePDF.Embeds
                     var sourceSVG = new XmlDocument();
                     sourceSVG.Load(fileStream);
 
-                    //var sourceSVG = new XPathDocument(fileStream);
                     var nav = sourceSVG.CreateNavigator();
                     var svgns = "";
                     var foundRoot = false;
@@ -1286,7 +1290,6 @@ namespace CorePDF.Embeds
                                 result.Paths.Add(new PDFPath("f\n"));
                             }
                         }
-
 
                         ByteData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(result));
                     }

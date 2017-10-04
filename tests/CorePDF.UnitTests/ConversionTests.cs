@@ -1,6 +1,10 @@
-﻿using System;
+﻿using CorePDF.Embeds;
+using Moq;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml.XPath;
@@ -8,219 +12,126 @@ using Xunit;
 
 namespace CorePDF.UnitTests
 {
-    public class TokenisedSVG
+    [Trait("Category", "Unit Test")]
+    public class ConversionTests : IDisposable
     {
-        public List<PDFPath> Paths { get; set; } = new List<PDFPath>();
-    }
+        private ImageFile _sut;
+        private string _fileName;
 
-    public class PDFPath
-    {
-        public string Command { get; set; }
-        public object[] Parameters { get; set; }
-
-        public PDFPath(string command, params object[] args)
+        public ConversionTests()
         {
-            Command = command;
+            _sut = new ImageFile();
+            _fileName = DateTime.Now.Ticks.ToString() + ".svg";
+            _sut.FilePath = _fileName;
+        }
 
-            if (args != null)
+        // create the file used in the tests
+        private void createFile(string contents)
+        {
+            using (var filestream = new FileStream(_fileName, FileMode.Create, FileAccess.Write))
             {
-                Parameters = args;
+                var fileData = @"<svg xmlns=""http://www.w3.org/2000/svg"" viewBox=""0 0 1000 1000"">" + contents + "</svg>";
+                filestream.Write(Encoding.UTF8.GetBytes(fileData), 0, fileData.Length);
+                filestream.Flush();
             }
         }
-    }
 
-    [Trait("Category", "Unit Test")]
-    public class ConversionTests
-    {
-        [Fact]
-        public void BasicSVGPath_ExpectSuccess()
+        public void Dispose()
         {
-            //var sourceData = "<svg height='210' width='400'><path d='M150 0 L75 200 L225 200 Z' /></svg>";
-            //using (var memStream = new MemoryStream(Encoding.UTF8.GetBytes(sourceData)))
-            //{
-            //    var sourceSVG = new XPathDocument(memStream);
-            //    var nav = sourceSVG.CreateNavigator();
-            //    if (nav.MoveToChild("svg", ""))
-            //    {
-            //        decimal.TryParse(nav.GetAttribute("width", ""), out decimal width);
-            //        decimal.TryParse(nav.GetAttribute("height", ""), out decimal height);
+            // clean up any files that might have been created by the tests
+            if (File.Exists(_fileName))
+            {
+                File.Delete(_fileName);
+            }
+        }
 
-            //        var paths = nav.SelectChildren("path", "");
-            //        var result = new TokenisedSVG();
+        [Fact]
+        public void BasicSVGFile_ExpectSuccess()
+        {
+            // Arrange
+            var content = @"<path d=""M50,50l50,50h50z""/>";
+            createFile(content);
+            Assert.True(File.Exists(_fileName));
 
-            //        while (paths.MoveNext())
-            //        {
-            //            var path = paths.Current.GetAttribute("d", "");
-            //            var fill = paths.Current.GetAttribute("fill", "");
-            //            var strokeColor = paths.Current.GetAttribute("stroke", "");
-            //            if (!string.IsNullOrEmpty(strokeColor))
-            //            {
-            //                result.Paths.Add(new PDFPath("{0} w\n", ToPDFColor(strokeColor)));
-            //            }
+            // Act
+            _sut.EmbedFile();
+            var result = JsonConvert.DeserializeObject<TokenisedSVG>(Encoding.UTF8.GetString(_sut.ByteData));
 
-            //            var strokeWidth = 1m;
-            //            if (!string.IsNullOrEmpty(paths.Current.GetAttribute("stroke-width", "")))
-            //            {
-            //                decimal.TryParse(paths.Current.GetAttribute("stroke-width", ""), out strokeWidth);
-            //            }
-            //            result.Paths.Add(new PDFPath("{0} w\n", strokeWidth));
+            // Assert
+            Assert.Equal(ImageFile.PATHDATA, _sut.Type);
+            Assert.Equal(1000, _sut.Height);
+            Assert.Equal(1000, _sut.Width);
+            Assert.True(result.Paths.Any(p => p.ToString().Contains("50 950 m")));
+            Assert.True(result.Paths.Any(p => p.ToString().Contains("100 900 l")));
+            Assert.True(result.Paths.Any(p => p.ToString().Contains("150 900 l")));
+            Assert.True(result.Paths.Any(p => p.ToString().Contains("50 950 l")));
+        }
 
-            //            // interpret the path
-            //            path = path.Replace(",", " ");
-            //            path = path.Replace("M", "M "); // Move To
-            //            path = path.Replace("m", "m ");
-            //            path = path.Replace("Z", "Z "); // Closepath
-            //            path = path.Replace("z", "z ");
-            //            path = path.Replace("L", "L "); // Line
-            //            path = path.Replace("l", "l ");
-            //            path = path.Replace("H", "H "); // Horizontal
-            //            path = path.Replace("h", "h ");
-            //            path = path.Replace("V", "V "); // Vertical
-            //            path = path.Replace("v", "v ");
-            //            path = path.Replace("C", "C "); // Cubic Bezier curve
-            //            path = path.Replace("c", "c ");
-            //            path = path.Replace("S", "S "); // Smoothed CBC
-            //            path = path.Replace("s", "s ");
-            //            path = path.Replace("Q", "Q "); // Quadratic Bezier curve
-            //            path = path.Replace("q", "q ");
-            //            path = path.Replace("T", "T "); // Smoothed QBC
-            //            path = path.Replace("t", "t ");
-            //            path = path.Replace("A", "A "); // Eliptical Arc
-            //            path = path.Replace("a", "a ");
+        [Theory]
+        [InlineData("M100,200 C100,100 400,100 400,200", "100 800 m", "100 900 400 900 400 800 c")]
+        [InlineData("M100,500 C25,400 475,400 400,500", "100 500 m", "25 600 475 600 400 500 c")]
+        [InlineData("M600,800 C625,700 725,700 750,800S875, 900 900, 800", "600 200 m", "625 300 725 300 750 200 c", "775 100 875 100 900 200 c")]
+        public void ConvertPath_CubicBezier_ExpectSuccess(string path, string position, params string[] curves)
+        {
+            // Arrange
+            var content = string.Format(@"<path d=""{0}""/>", path);
+            createFile(content);
+            Assert.True(File.Exists(_fileName));
 
-            //            var pathElements = path.Split(' ', StringSplitOptions.RemoveEmptyEntries);
-            //            var position = 0;
-            //            var posX = 0m;
-            //            var posY = 0m;
-            //            var startPosX = 0m;
-            //            var startPosY = 0m;
-            //            var inLineMode = false;
+            // Act
+            _sut.EmbedFile();
+            var result = JsonConvert.DeserializeObject<TokenisedSVG>(Encoding.UTF8.GetString(_sut.ByteData));
 
-            //            while (position < pathElements.Length)
-            //            {
-            //                var element = pathElements[position];
-            //                switch (element)
-            //                {
-            //                    case "M":
-            //                    case "m":
-            //                        // execute the move-to command
-            //                        position++;
-            //                        posX = decimal.Parse(pathElements[position]);
-            //                        position++;
-            //                        posY = height - decimal.Parse(pathElements[position]);
+            // Assert
+            Assert.True(result.Paths.Any(p => p.ToString().Contains(position)));
+            foreach (var curve in curves)
+            {
+                Assert.True(result.Paths.Any(p => p.ToString().Contains(curve)));
+            }
+        }
 
-            //                        result.Paths.Add(new PDFPath("{0} {1} m\n", posX, posY));
+        [Theory]
+        [InlineData("M200, 300 Q400, 50 600, 300 T1000, 300", "200 700 m", "333.33333 866.66667 466.66667 866.66667 600 700 c", "733.33333 533.33333 866.66667 533.33333 1000 700 c")]
+        public void ConvertPath_QuadraticBezier_ExpectSuccess(string path, string position, params string[] curves)
+        {
+            // Arrange
+            var content = string.Format(@"<path d=""{0}""/>", path);
+            createFile(content);
+            Assert.True(File.Exists(_fileName));
 
-            //                        startPosX = posX;
-            //                        startPosY = posY;
-            //                        inLineMode = false;
+            // Act
+            _sut.EmbedFile();
+            var result = JsonConvert.DeserializeObject<TokenisedSVG>(Encoding.UTF8.GetString(_sut.ByteData));
 
-            //                        break;
-            //                    case "Z":
-            //                    case "z":
-            //                        // execute the close-path command
-            //                        result.Paths.Add(new PDFPath("{0} {1} l\n", startPosX, startPosY));
-            //                        inLineMode = false;
+            // Assert
+            Assert.True(result.Paths.Any(p => p.ToString().Contains(position)));
+            foreach (var curve in curves)
+            {
+                Assert.True(result.Paths.Any(p => p.ToString().Contains(curve)));
+            }
+        }
 
-            //                        break;
-            //                    case "L":
-            //                    case "l":
-            //                        // execute the line-to command
-            //                        position++;
-            //                        posX = decimal.Parse(pathElements[position]);
-            //                        position++;
-            //                        posY = height - decimal.Parse(pathElements[position]);
 
-            //                        result.Paths.Add(new PDFPath("{0} {1} l\n", posX, posY));
-            //                        inLineMode = true;
+        [Theory]
+        [InlineData("M300,200 h-150 a150,150 0 1,0 150,-150 z", "300 800 m", "150 717.15729 217.15729 650 300 650 c", "382.84271 650 450 717.15729 450 800 c", "450 882.84271 382.84271 950 300 950 c")]
+        [InlineData("M275,175 v-150 a150,150 0 0,0 -150,150 z", "275 825 m", "192.15729 975 125 907.84271 125 825 c")]
+        public void ConvertPath_Arc_ExpectSuccess(string path, string position, params string[] curves)
+        {
+            // Arrange
+            var content = string.Format(@"<path d=""{0}""/>", path);
+            createFile(content);
+            Assert.True(File.Exists(_fileName));
 
-            //                        break;
-            //                    case "H":
-            //                    case "h":
-            //                        // execute the line-to command
-            //                        position++;
-            //                        posX = decimal.Parse(pathElements[position]);
+            // Act
+            _sut.EmbedFile();
+            var result = JsonConvert.DeserializeObject<TokenisedSVG>(Encoding.UTF8.GetString(_sut.ByteData));
 
-            //                        result.Paths.Add(new PDFPath("{0} {1} l\n", posX, posY));
-            //                        inLineMode = true;
-
-            //                        break;
-            //                    case "V":
-            //                    case "v":
-            //                        // execute the line-to command
-            //                        position++;
-            //                        posY = height - decimal.Parse(pathElements[position]);
-
-            //                        result.Paths.Add(new PDFPath("{0} {1} l\n", posX, posY));
-            //                        inLineMode = true;
-            //                        break;
-
-            //                    case "C":
-            //                    case "c":
-            //                        // execute the cubic bezier command
-            //                        position++;
-            //                        var cx1 = decimal.Parse(pathElements[position]);
-            //                        position++;
-            //                        var cy1 = height - decimal.Parse(pathElements[position]);
-
-            //                        position++;
-            //                        var cx2 = decimal.Parse(pathElements[position]);
-            //                        position++;
-            //                        var cy2 = height - decimal.Parse(pathElements[position]);
-
-            //                        position++;
-            //                        posX = decimal.Parse(pathElements[position]);
-            //                        position++;
-            //                        posY = height - decimal.Parse(pathElements[position]);
-
-            //                        result.Paths.Add(new PDFPath("{0} {1} {2} {3} {4} {5} c\n", cx1, cy1, cx2, cy2, posX, posY));
-            //                        break;
-
-            //                    case "Q":
-            //                    case "q":
-            //                        // execute the quadratic bezier command
-            //                        position++;
-            //                        var qx1 = decimal.Parse(pathElements[position]);
-            //                        position++;
-            //                        var qy1 = height - decimal.Parse(pathElements[position]);
-
-            //                        // need to calculate the first cubic control points from start position 
-            //                        // and the quadratic control point
-            //                        var x1 = posX + (2 / 3 * (qx1 - posX));
-            //                        var y1 = posY + (2 / 3 * (qy1 - posY));
-
-            //                        position++;
-            //                        posX = decimal.Parse(pathElements[position]);
-            //                        position++;
-            //                        posY = height - decimal.Parse(pathElements[position]);
-
-            //                        // need to calculate the second cubic control points from end position 
-            //                        // and the quadratic control point
-            //                        var x2 = posX + (2 / 3 * (qx1 - posX));
-            //                        var y2 = posY + (2 / 3 * (qy1 - posY));
-
-            //                        result.Paths.Add(new PDFPath("{0} {1} {2} {3} {4} {5} c\n", x1, y1, x2, y2, posX, posY));
-            //                        break;
-
-            //                    default:
-            //                        // not a command so it must be a set of coordinates
-            //                        if (inLineMode)
-            //                        {
-            //                            posX = decimal.Parse(pathElements[position]);
-            //                            position++;
-            //                            posY = height - decimal.Parse(pathElements[position]);
-            //                            result.Paths.Add(new PDFPath("{0} {1} l\n", posX, posY));
-            //                        }
-            //                        break;
-            //                }
-
-            //                position++;
-            //            }
-            //        }
-
-            //        var fred = 1;
-            //    }
-            //}
+            // Assert
+            Assert.True(result.Paths.Any(p => p.ToString().Contains(position)));
+            foreach (var curve in curves)
+            {
+                Assert.True(result.Paths.Any(p => p.ToString().Contains(curve)));
+            }
         }
     }
 }
