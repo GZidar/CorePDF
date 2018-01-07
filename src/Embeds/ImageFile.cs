@@ -72,6 +72,9 @@ namespace CorePDF.Embeds
 
         public void EmbedFile()
         {
+            // if the file already has byte data then skip this process
+            if (ByteData != null) return;
+
             // do nothing if there is no valid file specified
             if (string.IsNullOrEmpty(FilePath) || !File.Exists(FilePath)) return;
 
@@ -338,7 +341,7 @@ namespace CorePDF.Embeds
                             var polygon = polygons.Current.GetAttribute("points","");
                             polygon = polygon.Replace(",", " ");
 
-                            var points = polygon.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                            var points = polygon.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                             var path = "M ";
                             for (var i = 0; i < points.Length; i++ )
                             {
@@ -390,7 +393,7 @@ namespace CorePDF.Embeds
                             var polyline = polygons.Current.GetAttribute("points", "");
                             polyline = polyline.Replace(",", " ");
 
-                            var points = polyline.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                            var points = polyline.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                             var path = "M ";
                             for (var i = 0; i < points.Length; i++)
                             {
@@ -630,7 +633,7 @@ namespace CorePDF.Embeds
                             path = path.Replace("A", " A "); // Eliptical Arc
                             path = path.Replace("a", " a ");
 
-                            var rawElements = path.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                            var rawElements = path.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
                             var position = 0;
 
                             // need to loop through the path elements and clean up any that might still look weird
