@@ -88,7 +88,7 @@ namespace CorePDF.Contents
             }
 
             // now split the strings at their line breaks and process each paragraph so that it fits within the width
-            var textLines = Text.Split("\n");
+            var textLines = Text.Split('\n');
             var adjustedText = "";
             var calcHeight = 0;
             var isbold = false;
@@ -96,7 +96,7 @@ namespace CorePDF.Contents
             for (var l = 0; l < textLines.Length; l++)
             {
                 // split each line into words
-                var lineWords = textLines[l].Split(" ");
+                var lineWords = textLines[l].Split(' ');
                 var width = 0;
                 for (var num = 0; num < lineWords.Length; num++)
                 {
@@ -220,7 +220,7 @@ namespace CorePDF.Contents
                 result += "0 0 0 rg\n";
             }
 
-            textLines = adjustedText.Split("\n");
+            textLines = adjustedText.Split('\n');
             var count = 0;
             var curX = PosX;
             var curY = PosY;
