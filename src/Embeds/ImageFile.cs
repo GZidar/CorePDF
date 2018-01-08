@@ -37,12 +37,17 @@ namespace CorePDF.Embeds
         public string FilePath { get; set; }
 
         /// <summary>
+        /// The raw contents of an image file
+        /// </summary>
+        public byte[] FileData { get; set; }
+
+        /// <summary>
         /// The file type of image object being included.
         /// </summary>
         public string Type { get; set; } = IMAGEDATA;
 
         /// <summary>
-        /// The RBG data for the image. If a filename is provided then this field will
+        /// The RBG data for the image. If filedata or a filename is provided then this field will
         /// be calculated upon import of the files. 
         /// </summary>
         public byte[] ByteData { get; set; }
@@ -65,18 +70,20 @@ namespace CorePDF.Embeds
         [JsonIgnore] 
         public int Height { get; set; }
 
-        protected FileStream Open()
+        protected Stream Open()
         {
-            return new FileStream(FilePath, FileMode.Open, FileAccess.Read);
+            if (FileData == null)
+            {
+                return new FileStream(FilePath, FileMode.Open, FileAccess.Read);
+            }
+
+            return new MemoryStream(FileData);
         }
 
         public void EmbedFile()
         {
-            // if the file already has byte data then skip this process
-            if (ByteData != null) return;
-
-            // do nothing if there is no valid file specified
-            if (string.IsNullOrEmpty(FilePath) || !File.Exists(FilePath)) return;
+            // do nothing if there is no valid file or file data specified
+            if (FileData == null && (string.IsNullOrEmpty(FilePath) || !File.Exists(FilePath))) return;
 
             var rasterize = true;
 
@@ -1302,7 +1309,8 @@ namespace CorePDF.Embeds
                 return;
             }
 
-            using (var image = Image.Load(FilePath))
+            // load the image from the file or from the passed in data
+            using (var image = (FileData == null ? Image.Load(FilePath) : Image.Load(FileData)))
             {
                 Height = image.Height;
                 Width = image.Width;
