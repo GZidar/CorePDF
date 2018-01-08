@@ -34,46 +34,24 @@ namespace CorePDF.IntegrationTests
         public void CreatePDF_WithImageByteData_ExpectFileCreated()
         {
             // arrange
-            _sut = new Document();
-            var byteData = new byte[27];
+            byte[] byteData;
+            using (var filestream = new FileStream("mapimage2.jpeg", FileMode.Open, FileAccess.Read))
+            {
+                using (var memstream = new MemoryStream())
+                {
+                    filestream.CopyTo(memstream);
+                    byteData = memstream.ToArray();
+                }
+            }
 
-            byteData[0] = 255;
-            byteData[1] = 0;
-            byteData[2] = 0;
-            byteData[3] = 0;
-            byteData[4] = 255;
-            byteData[5] = 0;
-            byteData[6] = 0;
-            byteData[7] = 0;
-            byteData[8] = 255;
-            byteData[9] = 0;
-            byteData[10] = 0;
-            byteData[11] = 0;
-            byteData[12] = 255;
-            byteData[13] = 255;
-            byteData[14] = 255;
-            byteData[15] = 128;
-            byteData[16] = 128;
-            byteData[17] = 128;
-            byteData[18] = 255;
-            byteData[19] = 0;
-            byteData[20] = 0;
-            byteData[21] = 255;
-            byteData[22] = 0;
-            byteData[23] = 0;
-            byteData[24] = 255;
-            byteData[25] = 0;
-            byteData[26] = 0;
+            _sut = new Document();
 
             _sut.Images = new List<Embeds.ImageFile>
             {
                 new Embeds.ImageFile
                 {
                     Name = "bytedata",
-                    ByteData = byteData,
-                    Width = 3,
-                    Height = 3,
-                    Type = Embeds.ImageFile.IMAGEDATA
+                    FileData = byteData
                 }
             };
 
@@ -87,38 +65,7 @@ namespace CorePDF.IntegrationTests
                         ImageName = "bytedata",
                         PosX = 20,
                         PosY = 600,
-                        ScaleFactor = 10m
-                    },
-                    new TextBox
-                    {
-                        Text = "This is a test document",
-                        FontSize = 30,
-                        PosX = 250,
-                        PosY = 400,
-                        TextAlignment = Alignment.Center
-                    },
-                    new Shape
-                    {
-                        Type = Polygon.Rectangle,
-                        PosX = 200,
-                        PosY = 200,
-                        Height = 300,
-                        Width = 300,
-                        FillColor = "#ffffff",
-                        ZIndex = 0
-                    },
-                    new Shape
-                    {
-                        Type = Polygon.Ellipses,
-                        PosX = 350,
-                        PosY = 350,
-                        Stroke = new Stroke
-                        {
-                            Color = "#ff0000"
-                        },
-                        Height = 500,
-                        Width = 300,
-                        ZIndex = 10
+                        ScaleFactor = 0.16m
                     }
                 }
             });

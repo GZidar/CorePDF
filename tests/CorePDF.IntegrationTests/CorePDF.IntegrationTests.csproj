@@ -7,6 +7,12 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\mapimage.jpeg" Link="mapimage.jpeg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\mapimage2.jpeg" Link="mapimage2.jpeg">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\rpng2-bg16-toucan.png" Link="rpng2-bg16-toucan.png">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
