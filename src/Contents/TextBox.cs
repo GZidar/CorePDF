@@ -146,7 +146,7 @@ namespace CorePDF.Contents
                     if (!string.IsNullOrEmpty(lineWords[num]))
                     {
                         // determine the font that should be used to calculate the width
-                        var font = Fonts.Font(contentFont.BaseFont, isbold, isitalic);
+                        var font = Fonts.Font(contentFont.BaseFont, isbold, isitalic, fonts);
 
                         var wordWidth = StringLength(pureWord, FontSize, font);
                         if (width + wordWidth > textWidth)

@@ -1,3 +1,4 @@
+using CorePDF.Embeds;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -47,7 +48,7 @@ namespace CorePDF.TypeFaces
         /// </summary>
         public List<int> Metrics { get; set; }
 
-        public override void Publish(StreamWriter stream)
+        public void Publish(StreamWriter stream, List<FontFile> fontFiles)
         {
             var PDFData = new Dictionary<string, dynamic>
             {
@@ -57,6 +58,16 @@ namespace CorePDF.TypeFaces
                 { "/BaseFont", "/" + FontName},
                 { "/Encoding", "/" + Encoding}
             };
+
+            if (Type != "Type1")
+            {
+                var fontFile = fontFiles.Where(f => f.Name == FontName).First();
+
+                PDFData.Add("/FontDescriptor", string.Format("{0} 0 R", fontFile.ObjectNumber));
+                PDFData.Add("/FirstChar", 0);
+                PDFData.Add("/LastChar", 255);
+                PDFData.Add("/Widths", Metrics);
+            }
 
             _pdfObject = PDFData;
 
