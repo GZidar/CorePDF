@@ -150,4 +150,4 @@ with Reserved Font Name "Great Vibes"
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 
-https://raw.githubusercontent.com/GZidar/CorePDF/development/src/OFL.txt
+https://raw.githubusercontent.com/GZidar/CorePDF/development/OFL.txt
