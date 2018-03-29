@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -24,6 +25,14 @@ namespace CorePDF.Embeds
         public string BaseFont { get; set; }
         public bool Italic { get; set; }
         public bool Bold { get; set; }
+        public int Flags { get; set; }
+        public int CapHeight { get; set; }
+        public int Descent { get; set; }
+        public int AverageWidth { get; set; }
+        public int MaximumWidth { get; set; }
+        public int ItalicAngle { get; set; } = 0;
+        public int FontWeight { get; set; } = 400;
+        public int StemV { get; set; }
 
         public FontType Type { get; set; } = FontType.TrueType;
 
@@ -36,6 +45,12 @@ namespace CorePDF.Embeds
         /// The raw contents of the font file
         /// </summary>
         public byte[] FileData { get; set; }
+
+        /// <summary>
+        /// This will be calculated as the document is published
+        /// </summary>
+        [JsonIgnore]
+        public long FileBytePosition { get; set; }
 
         /// <summary>
         /// The size of each character relative to one another
@@ -69,32 +84,48 @@ namespace CorePDF.Embeds
 
         public override void Publish(StreamWriter stream)
         {
+
             var PDFData = new Dictionary<string, dynamic>
             {
                 { "/Type", "/FontDescriptor" },
                 { "/FontName", "/" + Name },
-                { "/ItalicAngle", 0},
-                { "/FontWeight", 400},
-                { "/MaxWidth", Widths.Max() },
-                { "/AvgWidth", Widths.Where(a => a > 0).Average() },
-                { "/FontFile2", string.Format("{0} 0 R", ObjectNumber)}
+                { "/Flags", Flags},
+                { "/ItalicAngle", ItalicAngle},
+                { "/Ascent", CapHeight + 1},
+                { "/Descent", Descent },
+                { "/CapHeight", CapHeight },
+                { "/FontWeight", FontWeight },
+                { "/MaxWidth", MaximumWidth },
+                { "/AvgWidth", AverageWidth },
+                { "/StemV", StemV},
+                { "/FontBBox", string.Format("[ {0} {1} {2} {3} ]", Descent - 2, Descent, MaximumWidth + (Descent - 2), CapHeight)},
+                { "/FontFile2", string.Format("{0} 0 R", ObjectNumber + 1)}
             };
 
-            // save the embedded font data
-            //var PDFData = new Dictionary<string, dynamic>
-            //{
-            //    { "/Type", "/Font" },
-            //    { "/Subtype", "/" + Type.ToString() },
-            //    { "/Name", "/" + Id },
-            //    { "/BaseFont", "/" + Name },
-            //    { "/Encoding", "/WinAnsiEncoding" },
-            //    { "/FontDescriptor", descriptor },
-            //    { "/FirstChar", "0" },
-            //    { "/LastChar", "255" },
-            //    { "/Widths", Widths },
-            //};
-
             _pdfObject = PDFData;
+
+            var encodedData = _encodedData;
+            var compressed = _compressed;
+
+            // clear out the data and compressed values for the Font Descriptor
+            _compressed = false;
+            _encodedData = null;
+            base.Publish(stream);
+
+            var bytePosition = BytePosition;
+
+            // restore those values to publish the actual font data
+            _encodedData = encodedData;
+            _compressed = compressed;
+            _pdfObject = new Dictionary<string, dynamic>();
+            ObjectNumber += 1;
+            base.Publish(stream);
+
+            // Save the byte position of the file and restore the previous values
+            // for the font descriptor
+            FileBytePosition = BytePosition;
+            BytePosition = bytePosition;
+            ObjectNumber -= 1;
         }
     }
 

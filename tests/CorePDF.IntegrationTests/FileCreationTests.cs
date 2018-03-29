@@ -36,24 +36,32 @@ namespace CorePDF.IntegrationTests
         {
             _sut = new Document();
 
+            // Widths are based on the characters being organised in the ASCII order (see next line)
+            //  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+            // note: space is the first character
             _sut.EmbedFont(new FontFile
+            {
+                Name = "GreatVibes-Regular",
+                BaseFont = "GreatVibes",
+                FilePath = "GreatVibes-Regular.ttf",
+                MaximumWidth = 2031,
+                AverageWidth = 286,
+                Descent = -400,
+                StemV = 28,
+                CapHeight = 850,
+                ItalicAngle = 0,
+                Widths = new List<int>
                 {
-                    Name = "Great Vibes - Regular",
-                    BaseFont = "Great Vibes",
-                    FilePath = "GreatVibes-Regular.ttf",
-                    Widths = new List<int>
-                    {
-                        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,250,333,420,500,500,833,778,
-                        333,333,333,500,675,250,333,250,278,500,500,500,500,500,500,500,500,500,500,333,333,675,675,
-                        675,500,920,611,611,667,722,611,611,722,722,333,444,667,556,833,667,722,611,722,611,500,556,
-                        722,611,833,611,556,556,389,278,389,422,500,333,500,500,444,500,444,278,500,500,278,278,444,
-                        278,722,500,500,500,500,389,389,278,500,444,667,444,444,389,400,275,400,541,389,500,500,167,
-                        500,500,500,500,214,556,500,333,333,500,500,500,500,500,250,523,350,333,556,556,500,889,1000,
-                        500,333,333,333,333,333,333,333,333,333,333,333,333,333,889,889,276,556,722,944,310,667,278,
-                        278,500,667,500
-                    }
+                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                    259, 350, 318, 746, 449, 621, 606, 158, 350, 518, 431, 458, 153, 406, 208,
+                    548, 502, 378, 488, 458, 464, 445, 421, 488, 420, 435, 256, 255, 329, 458,
+                    329, 382, 956, 712, 1041, 710, 1014, 815, 1048, 699, 1381, 912, 966, 1144,
+                    712, 1329, 1039, 726, 890, 752, 1024, 901, 918, 942, 975, 1344, 807, 959,
+                    677, 585, 867, 556, 370, 806, 211, 350, 345, 260, 367, 246, 198, 392, 332,
+                    174, 177, 363, 212, 507, 335, 335, 336, 342, 260, 256, 200, 357, 262, 476,
+                    333, 399, 341, 369, 485, 485, 485, 0
                 }
-            );
+            });
 
             _sut.Pages.Add(new Page
             {
@@ -62,15 +70,17 @@ namespace CorePDF.IntegrationTests
                 {
                     new TextBox
                     {
-                        Text = "This is a test document",
-                        FontFace = "Great Vibes - Regular",
-                        FontSize = 30,
-                        PosX = 250,
+                        Text = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCD\nEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcde\nfghijklmnopqrstuvwxyz{|}~",
+                        FontFace = "GreatVibes-Regular",
+                        FontSize = 20,
+                        PosX = 40,
                         PosY = 400,
-                        TextAlignment = Alignment.Center
+                        TextAlignment = Alignment.Left
                     },
                 }
             });
+
+            _sut.CompressContent = true;
 
             // Act
             using (var filestream = new FileStream(_fileName, FileMode.Create, FileAccess.Write))

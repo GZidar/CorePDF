@@ -66,20 +66,16 @@ namespace CorePDF.TypeFaces
                 var widths = "";
                 foreach (var number in Metrics)
                 {
-                    widths += number.ToString() + ", ";
-                }
-                if (! string.IsNullOrEmpty(widths))
-                {
-                    // get rid of the last comma and space
-                    widths = widths.TrimEnd(',',' ');
+                    widths += number.ToString() + " ";
                 }
 
                 PDFData.Add("/FontDescriptor", string.Format("{0} 0 R", fontFile.ObjectNumber));
-                PDFData.Add("/FirstChar", 0);
-                PDFData.Add("/LastChar", 255);
+                // only the standard ASCII characters are included
+                PDFData.Add("/FirstChar", 0); 
+                PDFData.Add("/LastChar", 127);
                 if (!string.IsNullOrEmpty(widths))
                 {
-                    PDFData.Add("/Widths", string.Format("[ {0} ]", widths));
+                    PDFData.Add("/Widths", string.Format("[ {0}]", widths));
                 }
             }
 
