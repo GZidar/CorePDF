@@ -1,4 +1,5 @@
 using CorePDF.Contents;
+using CorePDF.Embeds;
 using CorePDF.Pages;
 using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using System;
@@ -28,6 +29,67 @@ namespace CorePDF.IntegrationTests
             {
                 File.Delete(_fileName);
             }
+        }
+
+        [Fact]
+        public void CreatePDF_WithEmbeddedFont_ExpectFileCreated()
+        {
+            _sut = new Document();
+
+            // Widths are based on the characters being organised in the ASCII order (see next line)
+            //  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+            // note: space is the first character
+            _sut.EmbedFont(new FontFile
+            {
+                Name = "GreatVibes-Regular",
+                BaseFont = "GreatVibes",
+                FilePath = "GreatVibes-Regular.ttf",
+                MaximumWidth = 2031,
+                AverageWidth = 286,
+                Descent = -400,
+                StemV = 28,
+                CapHeight = 850,
+                ItalicAngle = 0,
+                Widths = new List<int>
+                {
+                    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+                    259, 350, 318, 746, 449, 621, 606, 158, 350, 518, 431, 458, 153, 406, 208,
+                    548, 502, 378, 488, 458, 464, 445, 421, 488, 420, 435, 256, 255, 329, 458,
+                    329, 382, 956, 712, 1041, 710, 1014, 815, 1048, 699, 1381, 912, 966, 1144,
+                    712, 1329, 1039, 726, 890, 752, 1024, 901, 918, 942, 975, 1344, 807, 959,
+                    677, 585, 867, 556, 370, 806, 211, 350, 345, 260, 367, 246, 198, 392, 332,
+                    174, 177, 363, 212, 507, 335, 335, 336, 342, 260, 256, 200, 357, 262, 476,
+                    333, 399, 341, 369, 485, 485, 485, 0
+                }
+            });
+
+            _sut.Pages.Add(new Page
+            {
+                PageSize = Paper.PAGEA4PORTRAIT,
+                Contents = new List<Content>()
+                {
+                    new TextBox
+                    {
+                        Text = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCD\nEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcde\nfghijklmnopqrstuvwxyz{|}~",
+                        FontFace = "GreatVibes-Regular",
+                        FontSize = 20,
+                        PosX = 40,
+                        PosY = 400,
+                        TextAlignment = Alignment.Left
+                    },
+                }
+            });
+
+            _sut.CompressContent = true;
+
+            // Act
+            using (var filestream = new FileStream(_fileName, FileMode.Create, FileAccess.Write))
+            {
+                _sut.Publish(filestream);
+            }
+
+            // Assert
+            Assert.True(File.Exists(_fileName), "The file was not created");
         }
 
         [Fact]

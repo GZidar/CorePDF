@@ -146,7 +146,7 @@ namespace CorePDF.Contents
                     if (!string.IsNullOrEmpty(lineWords[num]))
                     {
                         // determine the font that should be used to calculate the width
-                        var font = Fonts.Font(contentFont.BaseFont, isbold, isitalic);
+                        var font = fonts.Find(f => f.BaseFont == contentFont.BaseFont && f.Bold == isbold && f.Italic == isitalic);
 
                         var wordWidth = StringLength(pureWord, FontSize, font);
                         if (width + wordWidth > textWidth)
@@ -289,9 +289,9 @@ namespace CorePDF.Contents
 
                 // also need to replace any {{bold/italic}} tags with their PDF equivalents
 
-                output = output.Replace("{{B}}", string.Format(") Tj\n/{0} {1} Tf\n(", fonts.Find(f => f.BaseFont == contentFont.BaseFont && f.Bold && !f.Italic).Id, FontSize));
-                output = output.Replace("{{I}}", string.Format(") Tj\n/{0} {1} Tf\n(", fonts.Find(f => f.BaseFont == contentFont.BaseFont && !f.Bold && f.Italic).Id, FontSize));
-                output = output.Replace("{{BI}}", string.Format(") Tj\n/{0} {1} Tf\n(", fonts.Find(f => f.BaseFont == contentFont.BaseFont && f.Bold && f.Italic).Id, FontSize));
+                output = output.Replace("{{B}}", string.Format(") Tj\n/{0} {1} Tf\n(", fonts.Find(f => f.BaseFont == contentFont.BaseFont && f.Bold && !f.Italic)?.Id ?? contentFont.Id, FontSize));
+                output = output.Replace("{{I}}", string.Format(") Tj\n/{0} {1} Tf\n(", fonts.Find(f => f.BaseFont == contentFont.BaseFont && !f.Bold && f.Italic)?.Id ?? contentFont.Id, FontSize));
+                output = output.Replace("{{BI}}", string.Format(") Tj\n/{0} {1} Tf\n(", fonts.Find(f => f.BaseFont == contentFont.BaseFont && f.Bold && f.Italic)?.Id ?? contentFont.Id, FontSize));
                 output = output.Replace("{{/B}}", string.Format(") Tj\n/{0} {1} Tf\n(", contentFont.Id, FontSize));
                 output = output.Replace("{{/I}}", string.Format(") Tj\n/{0} {1} Tf\n(", contentFont.Id, FontSize));
                 output = output.Replace("{{/BI}}", string.Format(") Tj\n/{0} {1} Tf\n(", contentFont.Id, FontSize));

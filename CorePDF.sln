@@ -26,6 +26,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		gruntfile.js = gruntfile.js
 		karma.conf.js = karma.conf.js
 		LICENSE = LICENSE
+		OFL.txt = OFL.txt
 		package.json = package.json
 		README.md = README.md
 	EndProjectSection

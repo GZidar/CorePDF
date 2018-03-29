@@ -493,9 +493,14 @@ namespace CorePDF.TypeFaces
             return result;
         }
 
-        public static Font Font(string name, bool bold = false, bool italic = false)
+        public static Font Font(string name, bool bold = false, bool italic = false, List<Font> fonts = null)
         {
-            return Styles().FirstOrDefault(f => f.BaseFont.ToLower() == name.ToLower() && f.Bold == bold && f.Italic == italic);
+            if (fonts == null)
+            {
+                return Styles().FirstOrDefault(f => f.BaseFont.ToLower() == name.ToLower() && f.Bold == bold && f.Italic == italic);
+            }
+
+            return fonts.FirstOrDefault(f => f.BaseFont.ToLower() == name.ToLower() && f.Bold == bold && f.Italic == italic);
         }
 
         public static Barcode Font(string name)

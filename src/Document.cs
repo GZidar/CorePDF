@@ -5,6 +5,7 @@ using CorePDF.TypeFaces;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace CorePDF
@@ -39,6 +40,11 @@ namespace CorePDF
         public List<ImageFile> Images { get; set; } = new List<ImageFile>();
 
         /// <summary>
+        /// Any fonts to be embedded n the document
+        /// </summary>
+        public List<FontFile> FontFiles { get; set; } = new List<FontFile>();
+
+        /// <summary>
         /// If the document content streams are compressed 
         /// </summary>
         public bool CompressContent { get; set; } = false;
@@ -51,6 +57,22 @@ namespace CorePDF
             };
             _fonts.AddRange(Fonts.Styles());
             _fonts.AddRange(Fonts.Barcodes());
+        }
+
+        public void EmbedFont(FontFile font)
+        {
+            _fonts.Add(new Font
+            {
+                FontName = font.Name,
+                BaseFont = font.BaseFont,
+                Italic = font.Italic,
+                Bold = font.Bold,
+                Type = font.Type.ToString(),
+                Metrics = font.Widths
+            });
+
+            FontFiles.Add(font);
+
         }
 
         /// <summary>
@@ -80,6 +102,11 @@ namespace CorePDF
                 _catalog.Publish(_pageRoot, stream);
 
                 foreach (var font in _fonts)
+                {
+                    font.Publish(stream, FontFiles);
+                }
+
+                foreach (var font in FontFiles)
                 {
                     font.Publish(stream);
                 }
@@ -162,7 +189,10 @@ namespace CorePDF
                 image.EmbedFile();
             }
 
-            // TODO: add support for embedding of fonts
+            foreach (var font in FontFiles)
+            {
+                font.EmbedFile();
+            }
         }
 
         private void PrepareStreams()
@@ -170,6 +200,11 @@ namespace CorePDF
             foreach (var image in Images)
             {
                 image.PrepareStream();
+            }
+
+            foreach (var font in FontFiles)
+            {
+                font.PrepareStream(CompressContent);
             }
 
             foreach (var headerfooter in HeadersFooters)
@@ -195,6 +230,12 @@ namespace CorePDF
             foreach (var font in _fonts)
             {
                 result += string.Format("{0} 00000 n\n", font.BytePosition.ToString().PadLeft(10, '0'));
+            }
+
+            foreach (var font in FontFiles)
+            {
+                result += string.Format("{0} 00000 n\n", font.BytePosition.ToString().PadLeft(10, '0'));
+                result += string.Format("{0} 00000 n\n", font.FileBytePosition.ToString().PadLeft(10, '0'));
             }
 
             foreach (var image in Images)
@@ -273,6 +314,14 @@ namespace CorePDF
                 objectCount++;
                 font.Id = string.Format("F{0}", fontCount); 
                 font.ObjectNumber = objectCount;
+            }
+
+            foreach (var font in FontFiles)
+            {
+                objectCount++;
+                font.Id = _fonts.Where(f => f.FontName == font.Name).First().Id;
+                font.ObjectNumber = objectCount;
+                objectCount++; // take the actual font file into account as well
             }
 
             foreach (var image in Images)

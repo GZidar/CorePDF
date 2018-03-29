@@ -7,6 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\GreatVibes-Regular.ttf" Link="GreatVibes-Regular.ttf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
     <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\mapimage.jpeg" Link="mapimage.jpeg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
