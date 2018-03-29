@@ -19,6 +19,34 @@ document.Images = new List<Embeds.ImageFile>
     }
 };
 
+// Add any extra fonts you want to include in the document. Please note that 
+// the widths (below) are based on the characters being organised in the ASCII order (see next line)
+//  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
+// note: space is the first non-zero sized character (position 32)
+document.EmbedFont(new FontFile
+{
+    Name = "GreatVibes-Regular",
+    BaseFont = "GreatVibes",
+    FilePath = "GreatVibes-Regular.ttf",
+    MaximumWidth = 2031, // this value is specific to the font being embeded
+    AverageWidth = 286, // this value is specific to the font being embeded
+    Descent = -400, // this value is specific to the font being embeded
+    StemV = 28, // this value is specific to the font being embeded
+    CapHeight = 850, // this value is specific to the font being embeded
+    ItalicAngle = 0, // this value is specific to the font being embeded
+    Widths = new List<int>
+    {
+        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
+        259, 350, 318, 746, 449, 621, 606, 158, 350, 518, 431, 458, 153, 406, 208,
+        548, 502, 378, 488, 458, 464, 445, 421, 488, 420, 435, 256, 255, 329, 458,
+        329, 382, 956, 712, 1041, 710, 1014, 815, 1048, 699, 1381, 912, 966, 1144,
+        712, 1329, 1039, 726, 890, 752, 1024, 901, 918, 942, 975, 1344, 807, 959,
+        677, 585, 867, 556, 370, 806, 211, 350, 345, 260, 367, 246, 198, 392, 332,
+        174, 177, 363, 212, 507, 335, 335, 336, 342, 260, 256, 200, 357, 262, 476,
+        333, 399, 341, 369, 485, 485, 485, 0
+    }
+});
+
 // Add the content for each page
 document.Pages.Add(new Page
 {
@@ -35,6 +63,7 @@ document.Pages.Add(new Page
         new TextBox
         {
             Text = "This is a test document",
+            FontFace = "GreatVibes-Regular",
             FontSize = 30,
             PosX = 250,
             PosY = 400,
@@ -114,3 +143,11 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
+
+### Great Vibes Open Font License
+Copyright (c) 2012, TypeSETit, LLC (typesetit@att.net), 
+with Reserved Font Name "Great Vibes"
+
+This Font Software is licensed under the SIL Open Font License, Version 1.1.
+
+https://raw.githubusercontent.com/GZidar/CorePDF/development/src/OFL.txt
