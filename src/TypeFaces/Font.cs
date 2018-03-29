@@ -63,10 +63,24 @@ namespace CorePDF.TypeFaces
             {
                 var fontFile = fontFiles.Where(f => f.Name == FontName).First();
 
+                var widths = "";
+                foreach (var number in Metrics)
+                {
+                    widths += number.ToString() + ", ";
+                }
+                if (! string.IsNullOrEmpty(widths))
+                {
+                    // get rid of the last comma and space
+                    widths = widths.TrimEnd(',',' ');
+                }
+
                 PDFData.Add("/FontDescriptor", string.Format("{0} 0 R", fontFile.ObjectNumber));
                 PDFData.Add("/FirstChar", 0);
                 PDFData.Add("/LastChar", 255);
-                PDFData.Add("/Widths", Metrics);
+                if (!string.IsNullOrEmpty(widths))
+                {
+                    PDFData.Add("/Widths", string.Format("[ {0} ]", widths));
+                }
             }
 
             _pdfObject = PDFData;
