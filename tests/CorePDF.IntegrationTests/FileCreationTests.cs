@@ -1,6 +1,7 @@
 using CorePDF.Contents;
 using CorePDF.Embeds;
 using CorePDF.Pages;
+using CorePDF.TypeFaces;
 using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using System;
 using System.Collections.Generic;
@@ -29,6 +30,77 @@ namespace CorePDF.IntegrationTests
             {
                 File.Delete(_fileName);
             }
+        }
+
+        [Fact]
+        public void CreatePDF_WithTable_ExpectFileCreated()
+        {
+            _sut = new Document();
+
+            // Arrange
+            var table = new Table();
+            table.Width = 400;
+            table.PosX = 20;
+            table.PosY = 600;
+
+            var header = table.AddRow();
+            var hdrColumn1 = header.AddColumn();
+            hdrColumn1.Width = 50;
+            hdrColumn1.TextContent = new TextBox
+            {
+                Text = "Header Column 1",
+                FontFace = Fonts.FONTSANSSERIFBOLD,
+                FontSize = 20,
+                TextAlignment = Alignment.Center
+            };
+
+            var hdrColumn2 = header.AddColumn();
+            hdrColumn2.Width = 50;
+            hdrColumn2.TextContent = new TextBox
+            {
+                Text = "Header Column 2",
+                FontFace = Fonts.FONTSANSSERIFBOLD,
+                FontSize = 20,
+                TextAlignment = Alignment.Center
+            };
+
+            var row1 = table.AddRow();
+            var row1Column1 = row1.AddColumn();
+            row1Column1.Width = 50;
+            row1Column1.TextContent = new TextBox
+            {
+                Text = "Text Column 1",
+                FontSize = 20,
+                TextAlignment = Alignment.Center
+            };
+
+            var row1Column2 = row1.AddColumn();
+            row1Column2.Width = 50;
+            row1Column2.TextContent = new TextBox
+            {
+                Text = "Text Column 2",
+                FontFace = Fonts.FONTSANSSERIFITALIC,
+                FontSize = 20,
+                TextAlignment = Alignment.Center
+            };
+
+            _sut.Pages.Add(new Page
+            {
+                PageSize = Paper.PAGEA4PORTRAIT,
+                Contents = new List<Content>()
+                {
+                    table
+                }
+            });
+
+            // Act
+            using (var filestream = new FileStream(_fileName, FileMode.Create, FileAccess.Write))
+            {
+                _sut.Publish(filestream);
+            }
+
+            // Assert
+            Assert.True(File.Exists(_fileName), "The file was not created");
         }
 
         [Fact]
