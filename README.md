@@ -30,10 +30,12 @@ document.EmbedFont(new FontFile
     FilePath = "GreatVibes-Regular.ttf",
     MaximumWidth = 2031, // this value is specific to the font being embeded
     AverageWidth = 286, // this value is specific to the font being embeded
+    Ascent = 851, // this value is specific to the font being embeded
     Descent = -400, // this value is specific to the font being embeded
     StemV = 28, // this value is specific to the font being embeded
     CapHeight = 850, // this value is specific to the font being embeded
     ItalicAngle = 0, // this value is specific to the font being embeded
+    BoundingBoxLeft = -402, // this value is specific to the font being embeded
     Widths = new List<int>
     {
         0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,

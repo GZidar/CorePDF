@@ -25,13 +25,16 @@ namespace CorePDF.Embeds
         public string BaseFont { get; set; }
         public bool Italic { get; set; }
         public bool Bold { get; set; }
+        public int BoundingBoxLeft { get; set; }
         public int Flags { get; set; }
+        public int Ascent { get; set; }
         public int CapHeight { get; set; }
         public int Descent { get; set; }
         public int AverageWidth { get; set; }
         public int MaximumWidth { get; set; }
         public int ItalicAngle { get; set; } = 0;
         public int FontWeight { get; set; } = 400;
+        public int XHeight { get; set; }
         public int StemV { get; set; }
 
         public FontType Type { get; set; } = FontType.TrueType;
@@ -91,14 +94,14 @@ namespace CorePDF.Embeds
                 { "/FontName", "/" + Name },
                 { "/Flags", Flags},
                 { "/ItalicAngle", ItalicAngle},
-                { "/Ascent", CapHeight + 1},
+                { "/Ascent", Ascent},
                 { "/Descent", Descent },
                 { "/CapHeight", CapHeight },
                 { "/FontWeight", FontWeight },
                 { "/MaxWidth", MaximumWidth },
                 { "/AvgWidth", AverageWidth },
                 { "/StemV", StemV},
-                { "/FontBBox", string.Format("[ {0} {1} {2} {3} ]", Descent - 2, Descent, MaximumWidth + (Descent - 2), CapHeight)},
+                { "/FontBBox", string.Format("[ {0} {1} {2} {3} ]", BoundingBoxLeft, Descent, MaximumWidth + (BoundingBoxLeft), CapHeight)},
                 { "/FontFile2", string.Format("{0} 0 R", ObjectNumber + 1)}
             };
 

@@ -48,7 +48,9 @@ namespace CorePDF.IntegrationTests
                 AverageWidth = 286,
                 Descent = -400,
                 StemV = 28,
+                Ascent = 851,
                 CapHeight = 850,
+                BoundingBoxLeft = -402,
                 ItalicAngle = 0,
                 Widths = new List<int>
                 {
@@ -75,6 +77,7 @@ namespace CorePDF.IntegrationTests
                         FontSize = 20,
                         PosX = 40,
                         PosY = 400,
+                        Width = 500,
                         TextAlignment = Alignment.Left
                     },
                 }
