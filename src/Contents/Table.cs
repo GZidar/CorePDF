@@ -1,4 +1,6 @@
-﻿using System;
+﻿using CorePDF.Pages;
+using CorePDF.TypeFaces;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
@@ -7,8 +9,9 @@ namespace CorePDF.Contents
     public class Table : Content
     {
         //public TableRow Header { get; set; }
-        public List<TableRow> Rows { get; set; }
+        public List<TableRow> Rows { get; set; } = new List<TableRow>();
         public BorderPattern Border { get; set; }
+        public int CellPadding { get; set; } = 2;
 
         /// <summary>
         /// (Readonly) The sum of all the row heights
@@ -39,14 +42,58 @@ namespace CorePDF.Contents
 
         public TableRow AddRow()
         {
-            return new TableRow(this);
+            var row = new TableRow(this);
+            Rows.Add(row);
+
+            return row;
+        }
+
+        public override void PrepareStream(PageRoot pageRoot, Size pageSize, List<Font> fonts, bool compress)
+        {
+            var result = "";
+
+            var posX = PosX;
+            var posY = PosY;
+
+            foreach (var row in Rows)
+            {
+                var rowHeight = 0;
+
+                foreach (var cell in row.Columns)
+                {
+                    var cellWidth = (int)(Width * cell.Width / 100M);
+                    if (cell.TextContent != null)
+                    {
+                        cell.TextContent.Width = cellWidth - (2 * CellPadding);
+                        cell.TextContent.PosX = posX + CellPadding;
+                        cell.TextContent.PosY = posY - CellPadding;
+
+                        cell.TextContent.PrepareStream(pageRoot, pageSize, fonts, false);
+                        result += cell.TextContent.GetEncodedString() + "\n";
+
+                        posX += cellWidth;
+                        if (rowHeight < (cell.TextContent.Height + (2 * CellPadding)))
+                        {
+                            rowHeight = (cell.TextContent.Height + (2 * CellPadding));
+                        }
+                    }
+                }
+
+                // calculate the new row start co-ordinates 
+                posY -= rowHeight;
+                posX = PosX;
+            }
+
+            _encodedData = Encoding.UTF8.GetBytes(result);
+
+            base.PrepareStream(compress);
         }
     }
 
     public class TableRow
     {
         public readonly Table Table;
-        public List<TableCell> Columns { get; set; }
+        public List<TableCell> Columns { get; set; } = new List<TableCell>();
         public BorderPattern Border { get; set; }
 
         /// <summary>
@@ -86,7 +133,10 @@ namespace CorePDF.Contents
 
         public TableCell AddColumn()
         {
-            return new TableCell(this);
+            var cell = new TableCell(this);
+            Columns.Add(cell);
+
+            return cell;
         }
     }
 

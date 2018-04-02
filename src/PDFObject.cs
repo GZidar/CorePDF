@@ -14,6 +14,7 @@ namespace CorePDF
     {
         void PrepareStream(bool compress = false);
         void Publish(StreamWriter stream);
+        string GetEncodedString();
     }
 
     /// <summary>
@@ -47,6 +48,11 @@ namespace CorePDF
         /// This string will be output at the top of the PDF object it relates to
         /// </summary>
         public string Comment { get; set; }
+
+        public virtual string GetEncodedString()
+        {
+            return Encoding.UTF8.GetString(_encodedData);
+        }
 
         public virtual void PrepareStream(bool compress = false)
         {

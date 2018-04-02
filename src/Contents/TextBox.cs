@@ -301,6 +301,12 @@ namespace CorePDF.Contents
 
             result += "ET";
 
+            if (Height == 0)
+            {
+                // record the final height of the textbox after it has been rendered
+                Height = calcHeight;
+            }
+
             _encodedData = Encoding.UTF8.GetBytes(result);
 
             base.PrepareStream(compress);

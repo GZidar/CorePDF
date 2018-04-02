@@ -43,45 +43,66 @@ namespace CorePDF.IntegrationTests
             table.PosX = 20;
             table.PosY = 600;
 
-            var header = table.AddRow();
-            var hdrColumn1 = header.AddColumn();
-            hdrColumn1.Width = 50;
-            hdrColumn1.TextContent = new TextBox
-            {
-                Text = "Header Column 1",
-                FontFace = Fonts.FONTSANSSERIFBOLD,
-                FontSize = 20,
-                TextAlignment = Alignment.Center
-            };
-
-            var hdrColumn2 = header.AddColumn();
-            hdrColumn2.Width = 50;
-            hdrColumn2.TextContent = new TextBox
-            {
-                Text = "Header Column 2",
-                FontFace = Fonts.FONTSANSSERIFBOLD,
-                FontSize = 20,
-                TextAlignment = Alignment.Center
-            };
-
             var row1 = table.AddRow();
             var row1Column1 = row1.AddColumn();
             row1Column1.Width = 50;
             row1Column1.TextContent = new TextBox
             {
-                Text = "Text Column 1",
+                Text = "Row 1 Column 1",
+                FontFace = Fonts.FONTSANSSERIFBOLD,
                 FontSize = 20,
-                TextAlignment = Alignment.Center
+                TextAlignment = Alignment.Left
             };
 
             var row1Column2 = row1.AddColumn();
             row1Column2.Width = 50;
             row1Column2.TextContent = new TextBox
             {
-                Text = "Text Column 2",
+                Text = "Row 1 Column 2",
+                FontFace = Fonts.FONTSANSSERIFBOLD,
+                FontSize = 20,
+                TextAlignment = Alignment.Left
+            };
+
+            var row2 = table.AddRow();
+            var row2Column1 = row2.AddColumn();
+            row2Column1.Width = 33.33M;
+            row2Column1.TextContent = new TextBox
+            {
+                Text = "Row 2 Column 1",
+                FontSize = 20,
+                TextAlignment = Alignment.Left
+            };
+
+            var row2Column2 = row2.AddColumn();
+            row2Column2.Width = 33.33M;
+            row2Column2.TextContent = new TextBox
+            {
+                Text = "Row 2 Column 2",
                 FontFace = Fonts.FONTSANSSERIFITALIC,
                 FontSize = 20,
-                TextAlignment = Alignment.Center
+                TextAlignment = Alignment.Left
+            };
+
+            var row2Column3 = row2.AddColumn();
+            row2Column3.Width = 33.34M;
+            row2Column3.TextContent = new TextBox
+            {
+                Text = "Row 2 Column 3",
+                FontFace = Fonts.FONTSANSSERIFBOLDITALIC,
+                FontSize = 20,
+                TextAlignment = Alignment.Left
+            };
+
+            var row3 = table.AddRow();
+            var row3Column1 = row3.AddColumn();
+            row3Column1.Width = 100M;
+            row3Column1.TextContent = new TextBox
+            {
+                Text = "Row 3 Column 1",
+                FontFace = Fonts.FONTSANSSERIF,
+                FontSize = 20,
+                TextAlignment = Alignment.Left
             };
 
             _sut.Pages.Add(new Page
