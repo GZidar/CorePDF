@@ -65,7 +65,19 @@ namespace CorePDF.Contents
                     if (cell.TextContent != null)
                     {
                         cell.TextContent.Width = cellWidth - (2 * CellPadding);
-                        cell.TextContent.PosX = posX + CellPadding;
+
+                        switch (cell.TextContent.TextAlignment)
+                        {
+                            case Alignment.Center:
+                                cell.TextContent.PosX = posX + (cellWidth / 2);
+                                break;
+                            case Alignment.Right:
+                                cell.TextContent.PosX = posX + cellWidth - CellPadding;
+                                break;
+                            default:
+                                cell.TextContent.PosX = posX + CellPadding;
+                                break;
+                        }
                         cell.TextContent.PosY = posY - CellPadding;
 
                         cell.TextContent.PrepareStream(pageRoot, pageSize, fonts, false);

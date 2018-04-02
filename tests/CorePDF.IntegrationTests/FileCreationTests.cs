@@ -81,7 +81,7 @@ namespace CorePDF.IntegrationTests
                 Text = "Row 2 Column 2",
                 FontFace = Fonts.FONTSANSSERIFITALIC,
                 FontSize = 20,
-                TextAlignment = Alignment.Left
+                TextAlignment = Alignment.Center
             };
 
             var row2Column3 = row2.AddColumn();
@@ -91,7 +91,7 @@ namespace CorePDF.IntegrationTests
                 Text = "Row 2 Column 3",
                 FontFace = Fonts.FONTSANSSERIFBOLDITALIC,
                 FontSize = 20,
-                TextAlignment = Alignment.Left
+                TextAlignment = Alignment.Right
             };
 
             var row3 = table.AddRow();
