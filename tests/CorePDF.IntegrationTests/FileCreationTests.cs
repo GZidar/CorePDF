@@ -41,7 +41,26 @@ namespace CorePDF.IntegrationTests
             var table = new Table();
             table.Width = 400;
             table.PosX = 20;
-            table.PosY = 600;
+            table.PosY = 300;
+            table.Border = new BorderPattern
+            {
+                Top = new Stroke
+                {
+                    Width = 1
+                },
+                Left = new Stroke
+                {
+                    Width = 1
+                },
+                Bottom = new Stroke
+                {
+                    Width = 1
+                },
+                Right = new Stroke
+                {
+                    Width = 1
+                }
+            };
 
             var row1 = table.AddRow();
             var row1Column1 = row1.AddColumn();
