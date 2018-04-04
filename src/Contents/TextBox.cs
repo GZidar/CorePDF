@@ -223,7 +223,8 @@ namespace CorePDF.Contents
             textLines = adjustedText.Split('\n');
             var count = 0;
             var curX = PosX;
-            var curY = PosY;
+            var curY = PosY + (calcHeight - lineHeight); // if the string was split across multiple lines then the Y position needs adjusting
+
             var stringLength = 0;
             foreach (var line in textLines)
             {

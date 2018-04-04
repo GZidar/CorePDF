@@ -61,6 +61,7 @@ namespace CorePDF.IntegrationTests
                     Width = 1
                 }
             };
+            table.Padding.Bottom = 6;
 
             var row1 = table.AddRow();
             var row1Column1 = row1.AddColumn();

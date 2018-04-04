@@ -11,7 +11,7 @@ namespace CorePDF.Contents
         //public TableRow Header { get; set; }
         public List<TableRow> Rows { get; set; } = new List<TableRow>();
         public BorderPattern Border { get; set; }
-        public int CellPadding { get; set; } = 2;
+        public CellPadding Padding { get; set; }= new CellPadding(2);
 
         /// <summary>
         /// (Readonly) The sum of all the row heights
@@ -71,7 +71,7 @@ namespace CorePDF.Contents
                     var cellWidth = (int)(Width * cell.Width / 100M);
                     if (cell.TextContent != null)
                     {
-                        cell.TextContent.Width = cellWidth - (2 * CellPadding);
+                        cell.TextContent.Width = cellWidth - (Padding.Left + Padding.Right);
 
                         switch (cell.TextContent.TextAlignment)
                         {
@@ -79,21 +79,21 @@ namespace CorePDF.Contents
                                 cell.TextContent.PosX = posX + (cellWidth / 2);
                                 break;
                             case Alignment.Right:
-                                cell.TextContent.PosX = posX + cellWidth - CellPadding;
+                                cell.TextContent.PosX = posX + cellWidth - Padding.Right;
                                 break;
                             default:
-                                cell.TextContent.PosX = posX + CellPadding;
+                                cell.TextContent.PosX = posX + Padding.Left;
                                 break;
                         }
-                        cell.TextContent.PosY = posY + CellPadding;
+                        cell.TextContent.PosY = posY + Padding.Bottom;
 
                         cell.TextContent.PrepareStream(pageRoot, pageSize, fonts, false);
                         result += cell.TextContent.GetEncodedString() + "\n";
 
                         posX += cellWidth;
-                        if (rowHeight < (cell.TextContent.Height + (2 * CellPadding)))
+                        if (rowHeight < (cell.TextContent.Height + (Padding.Top + Padding.Bottom)))
                         {
-                            rowHeight = (cell.TextContent.Height + (2 * CellPadding));
+                            rowHeight = (cell.TextContent.Height + (Padding.Top + Padding.Bottom));
                         }
                     }
                 }
@@ -111,9 +111,12 @@ namespace CorePDF.Contents
 
                 foreach (var row in revRows)
                 {
+                    var remWidthPct = 100M;
+                    var remWidthPoint = Width;
+
                     foreach (var cell in row.Columns)
                     {
-                        var cellWidth = (int)(Width * cell.Width / 100M);
+                        var cellWidth = (int)(remWidthPoint * cell.Width / remWidthPct);
                         var cellHeight = row.Height;
 
                         var shape = new Shape {
@@ -131,47 +134,47 @@ namespace CorePDF.Contents
                             result += shape.GetEncodedString() + "\n";
                         }
 
-                        //if (Border.Top != null)
-                        //{
-                        //    shape.Width = cellWidth;
-                        //    shape.Height = 0;
-                        //    shape.PosX = posX;
-                        //    shape.PosY = posY + cellHeight;
+                        if (Border.Top != null)
+                        {
+                            shape.Width = cellWidth;
+                            shape.Height = 0;
+                            shape.PosX = posX;
+                            shape.PosY = posY + cellHeight;
 
-                        //    shape.PrepareStream(pageRoot, pageSize, fonts, false);
-                        //    result += shape.GetEncodedString() + "\n";
-                        //}
+                            shape.PrepareStream(pageRoot, pageSize, fonts, false);
+                            result += shape.GetEncodedString() + "\n";
+                        }
 
-                        //if (Border.Left != null)
-                        //{
-                        //    shape.Width = 0;
-                        //    shape.Height = cellHeight;
-                        //    shape.PosX = posX;
-                        //    shape.PosY = posY;
+                        if (Border.Left != null)
+                        {
+                            shape.Width = 0;
+                            shape.Height = cellHeight;
+                            shape.PosX = posX;
+                            shape.PosY = posY;
 
-                        //    shape.PrepareStream(pageRoot, pageSize, fonts, false);
-                        //    result += shape.GetEncodedString() + "\n";
-                        //}
+                            shape.PrepareStream(pageRoot, pageSize, fonts, false);
+                            result += shape.GetEncodedString() + "\n";
+                        }
 
-                        //if (Border.Right != null)
-                        //{
-                        //    shape.Width = 0;
-                        //    shape.Height = cellHeight;
-                        //    shape.PosX = posX + cellWidth;
-                        //    shape.PosY = posY;
+                        if (Border.Right != null)
+                        {
+                            shape.Width = 0;
+                            shape.Height = cellHeight;
+                            shape.PosX = posX + cellWidth;
+                            shape.PosY = posY;
 
-                        //    shape.PrepareStream(pageRoot, pageSize, fonts, false);
-                        //    result += shape.GetEncodedString() + "\n";
-                        //}
+                            shape.PrepareStream(pageRoot, pageSize, fonts, false);
+                            result += shape.GetEncodedString() + "\n";
+                        }
 
                         posX += cellWidth;
+                        remWidthPct -= cell.Width;
+                        remWidthPoint -= cellWidth;
                     }
 
                     // calculate the new row start co-ordinates 
                     posY += row.Height;
                     posX = PosX;
-
-                    break;
                 }
             }
 
@@ -201,14 +204,14 @@ namespace CorePDF.Contents
                     {
                         if (cell.ImageContent.Height > result)
                         {
-                            result = cell.ImageContent.Height + (2 * Table.CellPadding);
+                            result = cell.ImageContent.Height + (Table.Padding.Top + Table.Padding.Bottom);
                         }
                     }
                     else
                     {
                         if (cell.TextContent.Height > result)
                         {
-                            result = cell.TextContent.Height + (2 * Table.CellPadding);
+                            result = cell.TextContent.Height + (Table.Padding.Top + Table.Padding.Bottom);
                         }
                     }
                 }
@@ -254,5 +257,21 @@ namespace CorePDF.Contents
         public Stroke Right { get; set; }
         public Stroke Top { get; set; }
         public Stroke Bottom { get; set; }
+    }
+
+    public class CellPadding
+    {
+        public CellPadding(int value)
+        {
+            Left = value;
+            Right = value;
+            Top = value;
+            Bottom = value;
+        }
+
+        public int Left { get; set; }
+        public int Right { get; set; }
+        public int Top { get; set; }
+        public int Bottom { get; set; }
     }
 }
