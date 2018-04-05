@@ -1,6 +1,7 @@
 using CorePDF.Contents;
 using CorePDF.Embeds;
 using CorePDF.Pages;
+using CorePDF.TypeFaces;
 using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using System;
 using System.Collections.Generic;
@@ -29,6 +30,224 @@ namespace CorePDF.IntegrationTests
             {
                 File.Delete(_fileName);
             }
+        }
+
+        [Fact]
+        public void CreatePDF_WithTable_ExpectFileCreated()
+        {
+            _sut = new Document();
+
+            // Arrange
+            var table = new Table();
+            table.Width = 400;
+            table.PosX = 20;
+            table.PosY = 300;
+            table.Border = new BorderPattern
+            {
+                Top = new Stroke
+                {
+                    Width = 1
+                },
+                Left = new Stroke
+                {
+                    Width = 1
+                },
+                Bottom = new Stroke
+                {
+                    Width = 1
+                },
+                Right = new Stroke
+                {
+                    Width = 1
+                }
+            };
+            table.Padding.Bottom = 6;
+
+            var row1 = table.AddRow();
+            var row1Column1 = row1.AddColumn();
+            row1Column1.Width = 50; // this is a percentage of the table width (above)
+            row1Column1.TextContent = new TextBox
+            {
+                Text = "Row 1 Column 1",
+                FontFace = Fonts.FONTSANSSERIFBOLD,
+                FontSize = 20,
+                TextAlignment = Alignment.Left
+            };
+
+            var row1Column2 = row1.AddColumn();
+            row1Column2.Width = 50;
+            row1Column2.TextContent = new TextBox
+            {
+                Text = "Row 1 Column 2",
+                FontFace = Fonts.FONTSANSSERIFBOLD,
+                FontSize = 20,
+                TextAlignment = Alignment.Left
+            };
+
+            var row2 = table.AddRow();
+            var row2Column1 = row2.AddColumn();
+            row2Column1.Width = 33.33M;
+            row2Column1.TextContent = new TextBox
+            {
+                Text = "Row 2 Column 1",
+                FontSize = 20,
+                TextAlignment = Alignment.Left
+            };
+
+            var row2Column2 = row2.AddColumn();
+            row2Column2.Width = 33.33M;
+            row2Column2.TextContent = new TextBox
+            {
+                Text = "Row 2 Column 2",
+                FontFace = Fonts.FONTSANSSERIFITALIC,
+                FontSize = 20,
+                TextAlignment = Alignment.Center
+            };
+
+            var row2Column3 = row2.AddColumn();
+            row2Column3.Width = 33.34M;
+            row2Column3.TextContent = new TextBox
+            {
+                Text = "Row 2 Column 3",
+                FontFace = Fonts.FONTSANSSERIFBOLDITALIC,
+                FontSize = 20,
+                TextAlignment = Alignment.Right
+            };
+
+            var row3 = table.AddRow();
+            var row3Column1 = row3.AddColumn();
+            row3Column1.Width = 100M;
+            row3Column1.TextContent = new TextBox
+            {
+                Text = "Row 3 Column 1",
+                FontFace = Fonts.FONTSANSSERIF,
+                FontSize = 20,
+                TextAlignment = Alignment.Left
+            };
+
+            // now create a table
+            var table2 = new Table();
+            table2.Width = 400;
+            table2.PosX = 20;
+            table2.PosY = 700;
+            table2.Border = new BorderPattern
+            {
+                Top = new Stroke
+                {
+                    Width = 1
+                },
+                Left = new Stroke
+                {
+                    Width = 1
+                },
+                Bottom = new Stroke
+                {
+                    Width = 1
+                },
+                Right = new Stroke
+                {
+                    Width = 1
+                }
+            };
+            table2.Padding.Bottom = 6;
+            table2.Position = PositionAnchor.Top;
+
+            var t2row1 = table2.AddRow();
+            var t2row1Column1 = t2row1.AddColumn();
+            t2row1Column1.Width = 50; // this is a percentage of the table width (above)
+            t2row1Column1.TextContent = new TextBox
+            {
+                Text = "Row 1 Column 1",
+                FontFace = Fonts.FONTSANSSERIFBOLD,
+                FontSize = 20,
+                TextAlignment = Alignment.Left
+            };
+
+            var t2row1Column2 = t2row1.AddColumn();
+            t2row1Column2.Width = 50;
+            t2row1Column2.TextContent = new TextBox
+            {
+                Text = "Row 1 Column 2",
+                FontFace = Fonts.FONTSANSSERIFBOLD,
+                FontSize = 20,
+                TextAlignment = Alignment.Left
+            };
+
+            var t2row2 = table2.AddRow();
+            var t2row2Column1 = t2row2.AddColumn();
+            t2row2Column1.Width = 33.33M;
+            t2row2Column1.TextContent = new TextBox
+            {
+                Text = "Row 2 Column 1",
+                FontSize = 20,
+                TextAlignment = Alignment.Left
+            };
+
+            var t2row2Column2 = t2row2.AddColumn();
+            t2row2Column2.Width = 33.33M;
+            t2row2Column2.TextContent = new TextBox
+            {
+                Text = "Row 2 Column 2",
+                FontFace = Fonts.FONTSANSSERIFITALIC,
+                FontSize = 20,
+                TextAlignment = Alignment.Center
+            };
+
+            var t2row2Column3 = t2row2.AddColumn();
+            t2row2Column3.Width = 33.34M;
+            t2row2Column3.TextContent = new TextBox
+            {
+                Text = "Row 2 Column 3",
+                FontFace = Fonts.FONTSANSSERIFBOLDITALIC,
+                FontSize = 20,
+                TextAlignment = Alignment.Right
+            };
+
+            var t2row3 = table2.AddRow();
+            var t2row3Column1 = t2row3.AddColumn();
+            t2row3Column1.Width = 100M;
+            t2row3Column1.TextContent = new TextBox
+            {
+                Text = "Row 3 Column 1",
+                FontFace = Fonts.FONTSANSSERIF,
+                FontSize = 20,
+                TextAlignment = Alignment.Left
+            };
+
+            _sut.Pages.Add(new Page
+            {
+                PageSize = Paper.PAGEA4PORTRAIT,
+                Contents = new List<Content>()
+                {
+                    table,
+                    table2,
+                    new Shape
+                    {
+                        Type = Polygon.Ellipses,
+                        Width = 4,
+                        Height = 4,
+                        PosX = 20, // place this dot at the starting 
+                        PosY = 300 // coordinates of table 1
+                    },
+                    new Shape
+                    {
+                        Type = Polygon.Ellipses,
+                        Width = 4,
+                        Height = 4,
+                        PosX = 20, // place this dot at the starting 
+                        PosY = 700 // coordinates of table 2
+                    },
+                }
+            });
+
+            // Act
+            using (var filestream = new FileStream(_fileName, FileMode.Create, FileAccess.Write))
+            {
+                _sut.Publish(filestream);
+            }
+
+            // Assert
+            Assert.True(File.Exists(_fileName), "The file was not created");
         }
 
         [Fact]

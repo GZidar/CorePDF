@@ -24,6 +24,14 @@ namespace CorePDF.Contents
         public Alignment TextAlignment { get; set; }
 
         /// <summary>
+        /// Controls how the PosX and PosY co-ordinates are used to position the
+        /// content. If set to "Bottom" then the PosX and PosY will indicate the
+        /// position of the bottom line of the text block. If set to "Top" then 
+        /// PosX and PosY will indicate the position of the top line of the text block.
+        /// </summary>
+        public PositionAnchor Position { get; set; } = PositionAnchor.Top;
+
+        /// <summary>
         /// Specifies the font that will be used to show the text
         /// </summary>
         public string FontFace { get; set; } = Fonts.FONTSANSSERIF;
@@ -37,7 +45,21 @@ namespace CorePDF.Contents
         /// The spacing between each line of text. Will default to the fontsize if
         /// left as zero.
         /// </summary>
-        public int LineHeight { get; set; }
+        public int LineHeight {
+            get
+            {
+                if (_lineHeight == 0)
+                {
+                    return FontSize;
+                }
+                return _lineHeight;
+            }
+            set
+            {
+                _lineHeight = value;
+            }
+        }
+        private int _lineHeight;
 
         /// <summary>
         /// Specifies the color of the text. This is specified using HTML hexadecimal 
@@ -56,12 +78,6 @@ namespace CorePDF.Contents
 
             var result = "";
             var contentFont = fonts.Find(f => f.FontName == FontFace);
-
-            var lineHeight = FontSize;
-            if (LineHeight != 0)
-            {
-                lineHeight = LineHeight;
-            }
 
             var textHeight = Height;
             var textWidth = Width;
@@ -154,7 +170,7 @@ namespace CorePDF.Contents
                             // this word will take us over the edge so get rid of the trailing space and add a linebreak
                             adjustedText = adjustedText.Substring(0, adjustedText.Length - 1);
                             adjustedText += "\n";
-                            calcHeight += lineHeight;
+                            calcHeight += LineHeight;
                             width = 0;
                         }
 
@@ -203,13 +219,13 @@ namespace CorePDF.Contents
                     // Add the newline character back since this is where it used to be
                     adjustedText += "\n";
                 }
-                calcHeight += lineHeight;
+                calcHeight += LineHeight;
             }
 
             result = "BT\n";
             result += string.Format("/{0} {1} Tf\n", contentFont.Id, FontSize);
 
-            result += string.Format("{0} TL\n", lineHeight);
+            result += string.Format("{0} TL\n", LineHeight);
 
             if (!string.IsNullOrEmpty(Color))
             {
@@ -224,6 +240,13 @@ namespace CorePDF.Contents
             var count = 0;
             var curX = PosX;
             var curY = PosY;
+
+            if (Position == PositionAnchor.Bottom)
+            {
+                // if the string was split across multiple lines then the Y position needs adjusting
+                curY += (calcHeight - LineHeight); 
+            }
+
             var stringLength = 0;
             foreach (var line in textLines)
             {
@@ -242,7 +265,7 @@ namespace CorePDF.Contents
                 count++;
                 if (count > 1)
                 {
-                    curY = 0 - lineHeight;
+                    curY = 0 - LineHeight;
                 }
 
                 switch (TextAlignment)
@@ -300,6 +323,12 @@ namespace CorePDF.Contents
             }
 
             result += "ET";
+
+            if (Height == 0)
+            {
+                // record the final height of the textbox after it has been rendered
+                Height = calcHeight;
+            }
 
             _encodedData = Encoding.UTF8.GetBytes(result);
 
