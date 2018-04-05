@@ -14,9 +14,9 @@ namespace CorePDF.Contents
         /// <summary>
         /// This relates to the X co-ordinate of Lower Left Corner (LLC) of the content 
         /// block, unless it is a textbox, then this relates to the below:
-        ///     - Left Aligned: Lower Left of the top line of the text box
-        ///     - Centred: Mid point of the top line of the text box
-        ///     - Right Aligned: Lower Right of the top line of the text box
+        ///     - Left Aligned: Lower Left of the bottom line of the text box
+        ///     - Centred: Mid point of the bottom line of the text box
+        ///     - Right Aligned: Lower Right of the bottom line of the text box
         /// for an ellipses the position is the centre of the shape
         /// </summary>
         public int PosX { get; set; }
@@ -24,9 +24,9 @@ namespace CorePDF.Contents
         /// <summary>
         /// This relates to the Y co-ordinate of the Lower Left Corner (LLC) of the content 
         /// block, unless it is a textbox, then this relates to the below:
-        ///     - Left Aligned: Lower Left of the top line of the text box
-        ///     - Centred: Mid point of the top line of the text box
-        ///     - Right Aligned: Lower Right of the top line of the tex box
+        ///     - Left Aligned: Lower Left of the bottom line of the text box
+        ///     - Centred: Mid point of the bottom line of the text box
+        ///     - Right Aligned: Lower Right of the bottom line of the tex box
         /// for an ellipses the position is the centre of the shape
         /// </summary>
         public int PosY { get; set; }
