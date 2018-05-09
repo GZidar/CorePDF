@@ -47,6 +47,15 @@ namespace CorePDF.Contents
 
         public override void PrepareStream(PageRoot pageRoot, Size pageSize, List<Font> fonts, bool compress)
         {
+            if (PosY < 0 || PosY > pageSize.ContentHeight)
+            {
+                throw new ArgumentOutOfRangeException("PosY", "Shape vertical position (PosY) is outside the bounds of the page.");
+            }
+            if (PosX < 0 || PosX > pageSize.ContentWidth)
+            {
+                throw new ArgumentOutOfRangeException("PosX", "Shape horizontal position (PosY) is outside the bounds of the page.");
+            }
+
             var result = string.Format("{0} w\n", Stroke.Width);
             if (!string.IsNullOrEmpty(Stroke.DashPattern))
             {

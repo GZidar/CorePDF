@@ -76,6 +76,11 @@ namespace CorePDF.Contents
             // don't do anything of there is no text
             if (string.IsNullOrEmpty(Text)) return;
 
+            if (PosY < 0 || PosY > pageSize.ContentHeight)
+            {
+                throw new ArgumentOutOfRangeException("PosY", "TextBox vertical position (PosY) is outside the bounds of the page.");
+            }
+
             var result = "";
             var contentFont = fonts.Find(f => f.FontName == FontFace);
 
@@ -101,6 +106,12 @@ namespace CorePDF.Contents
                         textWidth = (pageSize.ContentWidth - PosX);
                         break;
                 }
+            }
+
+            if (textWidth < 0)
+            {
+                // invalid X coordinates for item
+                throw new ArgumentOutOfRangeException("PosX", "TextBox horizontal position (PosX) is outside the bounds of the page.");
             }
 
             // now split the strings at their line breaks and process each paragraph so that it fits within the width

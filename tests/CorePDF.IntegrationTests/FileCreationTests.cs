@@ -33,6 +33,64 @@ namespace CorePDF.IntegrationTests
         }
 
         [Fact]
+        public void CreatePDF_PosXOffThePage_ExpectError()
+        {
+            _sut = new Document();
+
+            _sut.Pages.Add(new Page
+            {
+                PageSize = Paper.PAGEA4PORTRAIT,
+                Contents = new List<Content>()
+                {
+                    new TextBox
+                    {
+                        Text = "Test words are here",
+                        FontFace = "Helvetica",
+                        FontSize = 14,
+                        PosX = 750,
+                        PosY = 100,
+                        TextAlignment = Alignment.Left
+                    }
+                }
+            });
+
+            // Act
+            using (var filestream = new FileStream(_fileName, FileMode.Create, FileAccess.Write))
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => _sut.Publish(filestream));
+            }
+        }
+
+        [Fact]
+        public void CreatePDF_PosYOffThePage_ExpectError()
+        {
+            _sut = new Document();
+
+            _sut.Pages.Add(new Page
+            {
+                PageSize = Paper.PAGEA4PORTRAIT,
+                Contents = new List<Content>()
+                {
+                    new TextBox
+                    {
+                        Text = "Test words are here",
+                        FontFace = "Helvetica",
+                        FontSize = 14,
+                        PosX = 100,
+                        PosY = -100,
+                        TextAlignment = Alignment.Left
+                    }
+                }
+            });
+
+            // Act
+            using (var filestream = new FileStream(_fileName, FileMode.Create, FileAccess.Write))
+            {
+                Assert.Throws<ArgumentOutOfRangeException>(() => _sut.Publish(filestream));
+            }
+        }
+
+        [Fact]
         public void CreatePDF_WithTable_ExpectFileCreated()
         {
             _sut = new Document();
