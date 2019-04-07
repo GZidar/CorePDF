@@ -96,13 +96,13 @@ namespace CorePDF.UnitTests
 
             // Assert
             Assert.False(string.IsNullOrEmpty(result));
-            Assert.True(lines.Any(l => l.Contains("/Length")));
+            Assert.Contains(lines, l => l.Contains("/Length"));
             Assert.Equal(length, stream.Length - 1); // use minus one because we get rid of the final newline
-            Assert.True(lines.Any(l => l.Contains(fontDef)));
-            Assert.True(lines.Any(l => l.Contains(startPos)));
-            Assert.True(lines.Any(l => l.Contains(lineDef)));
-            Assert.True(lines.Any(l => l.Contains(textDef)));
-            Assert.True(lines.Any(l => l.Contains(colorDef)));
+            Assert.Contains(lines, l => l.Contains(fontDef));
+            Assert.Contains(lines, l => l.Contains(startPos));
+            Assert.Contains(lines, l => l.Contains(lineDef));
+            Assert.Contains(lines, l => l.Contains(textDef));
+            Assert.Contains(lines, l => l.Contains(colorDef));
         }
 
         [Theory]
@@ -160,10 +160,10 @@ namespace CorePDF.UnitTests
 
             // Assert
             Assert.False(string.IsNullOrEmpty(result));
-            Assert.True(lines.Any(l => l.Contains("/Length")));
+            Assert.Contains(lines, l => l.Contains("/Length"));
             Assert.Equal(length, stream.Length - 1); // use minus one because we get rid of the final newline
-            Assert.True(lines.Any(l => l.Contains(startPos)));
-            Assert.True(lines.Any(l => l.Contains(textDef)));
+            Assert.Contains(lines, l => l.Contains(startPos));
+            Assert.Contains(lines, l => l.Contains(textDef));
         }
 
 

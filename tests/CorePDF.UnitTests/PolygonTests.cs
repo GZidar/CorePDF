@@ -23,6 +23,9 @@ namespace CorePDF.UnitTests
         public PolygonTests()
         {
             _sut = new Shape();
+
+            _pageSize.Object.Width = 99999;
+            _pageSize.Object.Height = 99999;
         }
 
         [Theory]
@@ -80,9 +83,9 @@ namespace CorePDF.UnitTests
 
             // Assert
             Assert.False(string.IsNullOrEmpty(result));
-            Assert.True(lines.Any(l => l.Contains("/Length")));
+            Assert.Contains(lines, l => l.Contains("/Length"));
             Assert.Equal(length, stream.Length - 1); // use minus one because we get rid of the final newline
-            Assert.True(lines.Any(l => l.Contains(polygon)));
+            Assert.Contains(lines, l => l.Contains(polygon));
         }
 
         [Theory]
@@ -142,10 +145,10 @@ namespace CorePDF.UnitTests
 
             // Assert
             Assert.False(string.IsNullOrEmpty(result));
-            Assert.True(lines.Any(l => l.Contains("/Length")));
+            Assert.Contains(lines, l => l.Contains("/Length"));
             Assert.Equal(length, stream.Length - 1); // use minus one because we get rid of the final newline
-            Assert.True(lines.Any(l => l.Contains(strokeDef)));
-            Assert.True(lines.Any(l => l.Contains(colorDef)));
+            Assert.Contains(lines, l => l.Contains(strokeDef));
+            Assert.Contains(lines, l => l.Contains(colorDef));
         }
 
 
@@ -208,13 +211,13 @@ namespace CorePDF.UnitTests
 
             // Assert
             Assert.False(string.IsNullOrEmpty(result));
-            Assert.True(lines.Any(l => l.Contains("/Length")));
+            Assert.Contains(lines, l => l.Contains("/Length"));
             Assert.Equal(length, stream.Length - 1); // use minus one because we get rid of the final newline
-            Assert.True(lines.Any(l => l.Contains(startPos)));
-            Assert.True(lines.Any(l => l.Contains(path1)));
-            Assert.True(lines.Any(l => l.Contains(path2)));
-            Assert.True(lines.Any(l => l.Contains(path3)));
-            Assert.True(lines.Any(l => l.Contains(path4)));
+            Assert.Contains(lines, l => l.Contains(startPos));
+            Assert.Contains(lines, l => l.Contains(path1));
+            Assert.Contains(lines, l => l.Contains(path2));
+            Assert.Contains(lines, l => l.Contains(path3));
+            Assert.Contains(lines, l => l.Contains(path4));
         }
 
         [Theory]
@@ -273,10 +276,10 @@ namespace CorePDF.UnitTests
 
             // Assert
             Assert.False(string.IsNullOrEmpty(result));
-            Assert.True(lines.Any(l => l.Contains("/Length")));
+            Assert.Contains(lines, l => l.Contains("/Length"));
             Assert.Equal(length, stream.Length - 1); // use minus one because we get rid of the final newline
-            Assert.True(lines.Any(l => l.Contains(startPos)));
-            Assert.True(lines.Any(l => l.Contains(path)));
+            Assert.Contains(lines, l => l.Contains(startPos));
+            Assert.Contains(lines, l => l.Contains(path));
         }
 
         [Theory]
@@ -340,10 +343,10 @@ namespace CorePDF.UnitTests
 
             // Assert
             Assert.False(string.IsNullOrEmpty(result));
-            Assert.True(lines.Any(l => l.Contains("/Length")));
+            Assert.Contains(lines, l => l.Contains("/Length"));
             Assert.Equal(length, stream.Length - 1); // use minus one because we get rid of the final newline
-            Assert.True(lines.Any(l => l.Contains(strokeDef)));
-            Assert.True(lines.Any(l => l.Contains(colorDef)));
+            Assert.Contains(lines, l => l.Contains(strokeDef));
+            Assert.Contains(lines, l => l.Contains(colorDef));
         }
 
 
@@ -404,13 +407,13 @@ namespace CorePDF.UnitTests
             }
 
             Assert.False(string.IsNullOrEmpty(result));
-            Assert.True(lines.Any(l => l.Contains("/Length")));
+            Assert.Contains(lines, l => l.Contains("/Length"));
             Assert.Equal(length, stream.Length - 1); // use minus one because we get rid of the final newline
-            Assert.True(lines.Any(l => l.Contains(startPos)));
-            Assert.True(lines.Any(l => l.Contains(path1)));
-            Assert.True(lines.Any(l => l.Contains(path2)));
-            Assert.True(lines.Any(l => l.Contains(path3)));
-            Assert.True(lines.Any(l => l.Contains(path4)));
+            Assert.Contains(lines, l => l.Contains(startPos));
+            Assert.Contains(lines, l => l.Contains(path1));
+            Assert.Contains(lines, l => l.Contains(path2));
+            Assert.Contains(lines, l => l.Contains(path3));
+            Assert.Contains(lines, l => l.Contains(path4));
         }
     }
 }

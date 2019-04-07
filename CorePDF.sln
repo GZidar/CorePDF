@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.26730.16
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28729.10
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CorePDF", "src\CorePDF.csproj", "{502ECB2C-72D9-4237-A053-7EE20D2299CA}"
 EndProject
@@ -25,7 +25,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		.gitignore = .gitignore
 		gruntfile.js = gruntfile.js
 		karma.conf.js = karma.conf.js
-		LICENSE = LICENSE
+		License.txt = License.txt
 		OFL.txt = OFL.txt
 		package.json = package.json
 		README.md = README.md
