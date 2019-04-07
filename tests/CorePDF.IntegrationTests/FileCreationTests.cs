@@ -2,7 +2,6 @@ using CorePDF.Contents;
 using CorePDF.Embeds;
 using CorePDF.Pages;
 using CorePDF.TypeFaces;
-using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;

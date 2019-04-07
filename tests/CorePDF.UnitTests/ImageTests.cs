@@ -118,10 +118,10 @@ namespace CorePDF.UnitTests
 
             // Assert
             Assert.False(string.IsNullOrEmpty(result));
-            Assert.True(lines.Any(l => l.Contains("/Length")));
+            Assert.Contains(lines, l => l.Contains("/Length"));
             Assert.Equal(length, stream.Length - 1); // use minus one because we get rid of the final newline
-            Assert.True(lines.Any(l => l.Contains(imageDef)));
-            Assert.True(lines.Any(l => l.Contains(placement)));
+            Assert.Contains(lines, l => l.Contains(imageDef));
+            Assert.Contains(lines, l => l.Contains(placement));
         }
 
         [Fact]

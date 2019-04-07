@@ -61,10 +61,10 @@ namespace CorePDF.UnitTests
             Assert.Equal(ImageFile.PATHDATA, _sut.Type);
             Assert.Equal(1000, _sut.Height);
             Assert.Equal(1000, _sut.Width);
-            Assert.True(result.Paths.Any(p => p.ToString().Contains("50 950 m")));
-            Assert.True(result.Paths.Any(p => p.ToString().Contains("100 900 l")));
-            Assert.True(result.Paths.Any(p => p.ToString().Contains("150 900 l")));
-            Assert.True(result.Paths.Any(p => p.ToString().Contains("50 950 l")));
+            Assert.Contains(result.Paths, p => p.ToString().Contains("50.0 950.0 m"));
+            Assert.Contains(result.Paths, p => p.ToString().Contains("100.0 900.0 l"));
+            Assert.Contains(result.Paths, p => p.ToString().Contains("150.0 900.0 l"));
+            Assert.Contains(result.Paths, p => p.ToString().Contains("50.0 950.0 l"));
         }
 
         [Theory]
@@ -83,10 +83,10 @@ namespace CorePDF.UnitTests
             var result = JsonConvert.DeserializeObject<TokenisedSVG>(Encoding.UTF8.GetString(_sut.ByteData));
 
             // Assert
-            Assert.True(result.Paths.Any(p => p.ToString().Contains(position)));
+            Assert.Contains(result.Paths, p => p.ToString().Replace(".0", "").Contains(position));
             foreach (var curve in curves)
             {
-                Assert.True(result.Paths.Any(p => p.ToString().Contains(curve)));
+                Assert.Contains(result.Paths, p => p.ToString().Replace(".0", "").Contains(curve));
             }
         }
 
@@ -104,10 +104,10 @@ namespace CorePDF.UnitTests
             var result = JsonConvert.DeserializeObject<TokenisedSVG>(Encoding.UTF8.GetString(_sut.ByteData));
 
             // Assert
-            Assert.True(result.Paths.Any(p => p.ToString().Contains(position)));
+            Assert.Contains(result.Paths, p => p.ToString().Replace(".0", "").Contains(position));
             foreach (var curve in curves)
             {
-                Assert.True(result.Paths.Any(p => p.ToString().Contains(curve)));
+                Assert.Contains(result.Paths, p => p.ToString().Replace(".0", "").Contains(curve));
             }
         }
 
@@ -127,10 +127,10 @@ namespace CorePDF.UnitTests
             var result = JsonConvert.DeserializeObject<TokenisedSVG>(Encoding.UTF8.GetString(_sut.ByteData));
 
             // Assert
-            Assert.True(result.Paths.Any(p => p.ToString().Contains(position)));
+            Assert.Contains(result.Paths, p => p.ToString().Replace(".0", "").Contains(position));
             foreach (var curve in curves)
             {
-                Assert.True(result.Paths.Any(p => p.ToString().Contains(curve)));
+                Assert.Contains(result.Paths, p => p.ToString().Replace(".0", "").Contains(curve));
             }
         }
     }
