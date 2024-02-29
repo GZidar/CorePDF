@@ -434,11 +434,11 @@ namespace CorePDF.IntegrationTests
                     Name = "vector",
                     FilePath = "sample.svg"
                 },
-                //new Embeds.ImageFile
-                //{
-                //    Name = "smiley",
-                //    FilePath = "smiley.jpg"
-                //},
+                new Embeds.ImageFile
+                {
+                    Name = "smiley",
+                    FilePath = "smiley.jpg"
+                },
                 //new Embeds.ImageFile
                 //{
                 //    Name = "sample",
@@ -475,13 +475,13 @@ namespace CorePDF.IntegrationTests
                     //    PosX = 400,
                     //    PosY = 600
                     //},
-                    //new Image
-                    //{
-                    //    ImageName = "smiley",
-                    //    PosX = 200,
-                    //    PosY = 600,
-                    //    ScaleFactor = 0.2m
-                    //},
+                    new Image
+                    {
+                        ImageName = "smiley",
+                        PosX = 200,
+                        PosY = 600,
+                        ScaleFactor = 0.2m
+                    },
                     new TextBox
                     {
                         Text = "This is a test document",
