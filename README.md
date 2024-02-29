@@ -1,5 +1,5 @@
 # CorePDF
-A basic PDF library that works with .net core that you can do with as you please.
+A basic PDF library that works with .net that you can do with as you please.
 
 ## Important
 This library does not (yet) support the creation of encrypted or secure PDFs. So it should not be used
@@ -105,7 +105,7 @@ using (var filestream = new FileStream("sample.pdf", FileMode.Create, FileAccess
 ```
 
 # License
-Copyright (c) 2017 CorePDF Contributors
+Copyright (c) 2024 CorePDF Contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
