@@ -1,14 +1,13 @@
-﻿using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.PixelFormats;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
-using System.Xml.XPath;
 
 namespace CorePDF.Embeds
 {
@@ -1310,14 +1309,16 @@ namespace CorePDF.Embeds
             }
 
             // load the image from the file or from the passed in data
-            using (var image = (FileData == null ? Image.Load(FilePath) : Image.Load(FileData)))
+            using (var image = (FileData == null ? Image.Load<Rgba32>(FilePath) : Image.Load<Rgba32>(FileData)))
             {
                 Height = image.Height;
                 Width = image.Width;
 
                 var hasAlpha = false;
 
-                var rgbbuf = image.SavePixelData();
+
+                byte[] rgbbuf = new byte[image.Width * image.Height * Unsafe.SizeOf<Rgba32>()];
+                image.CopyPixelDataTo(rgbbuf);
 
                 var abuf = new byte[rgbbuf.Length];
                 var rbuf = new byte[rgbbuf.Length];
