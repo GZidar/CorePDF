@@ -1,4 +1,4 @@
-﻿using CorePDF.Embeds;
+using CorePDF.Embeds;
 using CorePDF.Pages;
 using CorePDF.TypeFaces;
 using System.Collections.Generic;
@@ -29,6 +29,14 @@ namespace CorePDF.Contents
             var imageFile = pageRoot.Document.GetImage(ImageName);
             if (imageFile == null || imageFile.ByteData == null) return;
             var result = "";
+
+            // the area covered by the image, for any hyperlink
+            var linkWidth = Height > 0 && Width > 0 ? Width : imageFile.Width * ScaleFactor;
+            var linkHeight = Height > 0 && Width > 0 ? Height : imageFile.Height * ScaleFactor;
+            if (linkWidth > 0 && linkHeight > 0)
+            {
+                SetLinkBounds(PosX, PosY, PosX + linkWidth, PosY + linkHeight);
+            }
 
             if (imageFile.Type != ImageFile.PATHDATA)
             {

@@ -1,4 +1,4 @@
-﻿using CorePDF.Pages;
+using CorePDF.Pages;
 using CorePDF.TypeFaces;
 using System;
 using System.Collections.Generic;
@@ -117,6 +117,16 @@ namespace CorePDF.Contents
              *      k   j   i       using the Roundedness constant (see above) and the height and width
              *                      of the desired shape.
              */
+
+            // the area covered by the shape, for any hyperlink. Ellipses are positioned by their centre
+            if (Type == Polygon.Ellipses)
+            {
+                SetLinkBounds(PosX - (Width / 2m), PosY - (Height / 2m), PosX + (Width / 2m), PosY + (Height / 2m));
+            }
+            else
+            {
+                SetLinkBounds(PosX, PosY, PosX + Width, PosY + Height);
+            }
 
             switch (Type)
             {

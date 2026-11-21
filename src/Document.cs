@@ -1,9 +1,12 @@
-﻿using CorePDF.Contents;
+﻿using CorePDF.Conformance;
+using CorePDF.Contents;
 using CorePDF.Embeds;
 using CorePDF.Pages;
 using CorePDF.TypeFaces;
+using CorePDF.Writing;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -45,10 +48,17 @@ namespace CorePDF
         public List<FontFile> FontFiles { get; set; } = new List<FontFile>();
 
         /// <summary>
-        /// If the document content streams are compressed 
+        /// If the document content streams are compressed
         /// </summary>
         public bool CompressContent { get; set; } = false;
- 
+
+        /// <summary>
+        /// The archival standard the document must conform to. When set to a PDF/A level,
+        /// publishing will fail with an explanation if the document can't comply (eg: if text
+        /// uses one of the standard fonts, which can't be embedded).
+        /// </summary>
+        public PdfConformance Conformance { get; set; } = PdfConformance.None;
+
         public Document()
         {
             _pageRoot = new PageRoot
@@ -74,55 +84,60 @@ namespace CorePDF
             _fonts.AddRange(Fonts.Styles());
             _fonts.AddRange(Fonts.Barcodes());
 
-            foreach (var font in FontFiles)
+            foreach (var fontFile in FontFiles)
             {
-                _fonts.Add(new Font
+                var ttf = new TrueTypeFont(fontFile.ReadData());
+                if (ttf.EmbeddingRestricted)
                 {
-                    FontName = font.Name,
-                    BaseFont = font.BaseFont,
-                    Italic = font.Italic,
-                    Bold = font.Bold,
-                    Type = font.Type.ToString(),
-                    Metrics = font.Widths
-                });
+                    throw new InvalidOperationException($"The licence of the font '{fontFile.Name}' does not allow it to be embedded in documents.");
+                }
+
+                _fonts.Add(new EmbeddedFont(fontFile, ttf));
+            }
+
+            var fontCount = 0;
+            foreach (var font in _fonts)
+            {
+                fontCount++;
+                font.Id = string.Format("F{0}", fontCount);
             }
         }
 
         /// <summary>
-        /// Called to produce the document stream
+        /// Called to produce the document stream. The stream is left open.
         /// </summary>
         /// <param name="baseStream"></param>
         public void Publish(Stream baseStream)
         {
             using (new InvariantCultureScope())
-            using (StreamWriter stream = new StreamWriter(baseStream, new UTF8Encoding(false)))
+            using (var output = new PdfOutputStream(baseStream))
+            using (var stream = new StreamWriter(output, new UTF8Encoding(false)))
             {
                 stream.NewLine = "\n";
 
-                // PDF Header
-                stream.WriteLine("%PDF-{0}", "1.4"); // the version of PDF 
-                stream.WriteLine("%\x82\x82\x82\x82"); // needed to allow editors to know that this is a binary file
-
+                // Lay out all the content first. This determines which fonts (and which
+                // characters within them) are used, so only those need to be included.
                 BuildFontList();
-
-                // get the data for the embedded files
                 EmbedFiles();
-
-                // place all the document objects into postion
-                var objects = PositionObjects();
-
-                // then get all the data ready for the document
+                AssignIds();
                 PrepareStreams();
+                CheckConformance();
+
+                foreach (var page in Pages)
+                {
+                    page.CollectLinks();
+                }
+
+                var objectCount = AssignObjectNumbers();
+
+                // PDF Header
+                stream.WriteLine("%PDF-{0}", Conformance == PdfConformance.None ? "1.4" : "1.7");
+                stream.WriteLine("%\x82\x82\x82\x82"); // needed to allow editors to know that this is a binary file
 
                 // Call publish on all the child objects
                 _catalog.Publish(_pageRoot, stream);
 
-                foreach (var font in _fonts)
-                {
-                    font.Publish(stream, FontFiles);
-                }
-
-                foreach (var font in FontFiles)
+                foreach (var font in _fonts.Where(f => f.Used))
                 {
                     font.Publish(stream);
                 }
@@ -152,29 +167,51 @@ namespace CorePDF
                     page.Publish(_fonts, stream);
                 }
 
+                foreach (var page in Pages)
+                {
+                    PublishLinks(page, stream);
+                }
+
                 //// Document attributes
                 Properties.Publish(stream);
 
-                // PDF Cross Reference
-                var startXref = stream.BaseStream.Position;
-                var xref = "xref\n";
-                xref += string.Format("0 {0}\n", objects + 1);
-                xref += CreateXRefTable();
+                if (_catalog.MetadataNumber > 0)
+                {
+                    // XMP metadata must not be compressed so it can be found by tools that don't understand PDF
+                    new RawObject(_catalog.MetadataNumber, new Dictionary<string, dynamic>
+                    {
+                        { "/Type", "/Metadata" },
+                        { "/Subtype", "/XML" }
+                    }, Encoding.UTF8.GetBytes(Properties.ToXmp(Conformance))).Publish(stream);
+                }
 
-                stream.Write(xref);
+                if (_catalog.OutputProfileNumber > 0)
+                {
+                    new RawObject(_catalog.OutputProfileNumber, new Dictionary<string, dynamic>
+                    {
+                        { "/N", 3 }
+                    }, SrgbIccProfile.Bytes, compress: true).Publish(stream);
+                }
+
+                stream.Flush();
+
+                // the document id is a hash of its content, so publishing the same document
+                // always gives the same result
+                var id = PdfString.Hex(output.GetHashSoFar());
+
+                // PDF Cross Reference
+                var startXref = output.Position;
+                stream.Write(CreateXRefTable(output, objectCount));
 
                 // PDF Trailer
                 var trailer = "trailer\n";
-                trailer += string.Format("<</Size {0}\n", objects + 1);
-                trailer += "/Root 1 0 R\n";
-
-                if (Properties.ObjectNumber > 0)
-                {
-                    trailer += string.Format("/Info {0} 0 R\n", Properties.ObjectNumber);
-                }
+                trailer += string.Format("<</Size {0}\n", objectCount + 1);
+                trailer += string.Format("/Root {0} 0 R\n", _catalog.ObjectNumber);
+                trailer += string.Format("/Info {0} 0 R\n", Properties.ObjectNumber);
+                trailer += string.Format("/ID [{0} {0}]\n", id);
                 trailer += ">>\n";
                 trailer += "startxref\n";
-                trailer += startXref.ToString() + "\n";
+                trailer += startXref.ToString(CultureInfo.InvariantCulture) + "\n";
                 trailer += "%%EOF";
 
                 // PDF END
@@ -203,11 +240,7 @@ namespace CorePDF
             foreach (var image in Images)
             {
                 image.EmbedFile();
-            }
-
-            foreach (var font in FontFiles)
-            {
-                font.EmbedFile();
+                image.Interpolate = Conformance == PdfConformance.None;
             }
         }
 
@@ -216,11 +249,6 @@ namespace CorePDF
             foreach (var image in Images)
             {
                 image.PrepareStream();
-            }
-
-            foreach (var font in FontFiles)
-            {
-                font.PrepareStream(CompressContent);
             }
 
             foreach (var headerfooter in HeadersFooters)
@@ -235,177 +263,196 @@ namespace CorePDF
         }
 
         /// <summary>
-        /// This needs to be processed in the same order as the object position method below.
+        /// Makes sure the document can meet the requested conformance level
         /// </summary>
-        /// <returns></returns>
-        private string CreateXRefTable()
+        private void CheckConformance()
         {
-            var result = "0000000000 65535 f\n";
-            result += string.Format("{0} 00000 n\n", _catalog.BytePosition.ToString().PadLeft(10, '0'));
+            if (Conformance == PdfConformance.None) return;
 
-            foreach (var font in _fonts)
+            var standardFonts = _fonts.Where(f => f.Used && !f.IsEmbedded).Select(f => f.FontName).ToList();
+            if (standardFonts.Count > 0)
             {
-                result += string.Format("{0} 00000 n\n", font.BytePosition.ToString().PadLeft(10, '0'));
+                throw new InvalidOperationException(string.Format(
+                    "PDF/A documents must embed every font they use, but the standard font(s) {0} cannot be embedded. " +
+                    "Embed a TrueType font with Document.EmbedFont and use it for this text instead.",
+                    string.Join(", ", standardFonts.Select(f => "'" + f + "'"))));
             }
-
-            foreach (var font in FontFiles)
-            {
-                result += string.Format("{0} 00000 n\n", font.BytePosition.ToString().PadLeft(10, '0'));
-                result += string.Format("{0} 00000 n\n", font.FileBytePosition.ToString().PadLeft(10, '0'));
-            }
-
-            foreach (var image in Images)
-            {
-                result += string.Format("{0} 00000 n\n", image.BytePosition.ToString().PadLeft(10, '0'));
-            }
-
-            result += string.Format("{0} 00000 n\n", _pageRoot.BytePosition.ToString().PadLeft(10, '0'));
-
-            foreach (var headerfooter in HeadersFooters)
-            {
-                foreach (var content in headerfooter.Contents)
-                {
-                    result += string.Format("{0} 00000 n\n", content.BytePosition.ToString().PadLeft(10, '0'));
-                }
-            }
-
-            foreach (var page in Pages)
-            {
-                foreach (var content in page.Contents)
-                {
-                    result += string.Format("{0} 00000 n\n", content.BytePosition.ToString().PadLeft(10, '0'));
-                }
-            }
-
-            foreach (var page in Pages)
-            {
-                result += string.Format("{0} 00000 n\n", page.BytePosition.ToString().PadLeft(10, '0'));
-            }
-
-            result += string.Format("{0} 00000 n\n", Properties.BytePosition.ToString().PadLeft(10, '0'));
-
-            return result;
         }
 
-        private int PositionObjects()
+        /// <summary>
+        /// Writes the link annotations for a page
+        /// </summary>
+        private void PublishLinks(Page page, StreamWriter stream)
+        {
+            for (var i = 0; i < page.Links.Count; i++)
+            {
+                var link = page.Links[i];
+                new RawObject(page.FirstAnnotationNumber + i, new Dictionary<string, dynamic>
+                {
+                    { "/Type", "/Annot" },
+                    { "/Subtype", "/Link" },
+                    { "/Rect", string.Format(CultureInfo.InvariantCulture, "[{0} {1} {2} {3}]",
+                        Math.Round(link.Left, 2), Math.Round(link.Bottom, 2), Math.Round(link.Right, 2), Math.Round(link.Top, 2)) },
+                    { "/Border", "[0 0 0]" },
+                    { "/F", 4 }, // print the annotation with the page (required by PDF/A)
+                    { "/A", string.Format("<< /S /URI /URI {0} >>", PdfString.Uri(link.Uri)) }
+                }).Publish(stream);
+            }
+        }
+
+        /// <summary>
+        /// Builds the cross reference table from the positions recorded as each object was written
+        /// </summary>
+        private static string CreateXRefTable(PdfOutputStream output, int objectCount)
+        {
+            // each entry must be exactly 20 bytes long, including the two byte end of line
+            var result = new StringBuilder();
+            result.Append("xref\n");
+            result.AppendFormat("0 {0}\n", objectCount + 1);
+            result.Append("0000000000 65535 f \n");
+
+            for (var objectNumber = 1; objectNumber <= objectCount; objectNumber++)
+            {
+                if (!output.ObjectOffsets.TryGetValue(objectNumber, out var position))
+                {
+                    throw new InvalidOperationException($"Object number {objectNumber} was reserved but never written.");
+                }
+
+                result.AppendFormat("{0} 00000 n \n", position.ToString(CultureInfo.InvariantCulture).PadLeft(10, '0'));
+            }
+
+            return result.ToString();
+        }
+
+        /// <summary>
+        /// Gives the content the identifiers used to refer to fonts and images within the
+        /// page content, and puts the content into drawing order.
+        /// </summary>
+        private void AssignIds()
         {
             // need to sort the content elements on each page by z-Index (from 0 to n)
             // this is because the PDF renders the objects in the order they are defined
             foreach (var page in Pages)
             {
-                page.Contents.Sort((Content x, Content y) =>
-                {
-                    if (x.ZIndex == 0 && y.ZIndex == 0) return 0;
-                    else if (x.ZIndex == 0) return -1;
-                    else if (y.ZIndex == 0) return 1;
-                    else return x.ZIndex.CompareTo(y.ZIndex);
-                });
+                SortByZIndex(page.Contents);
             }
 
             foreach (var headerfooter in HeadersFooters)
             {
-                headerfooter.Contents.Sort((Content x, Content y) =>
-                {
-                    if (x.ZIndex == 0 && y.ZIndex == 0) return 0;
-                    else if (x.ZIndex == 0) return -1;
-                    else if (y.ZIndex == 0) return 1;
-                    else return x.ZIndex.CompareTo(y.ZIndex);
-                });
+                SortByZIndex(headerfooter.Contents);
             }
 
-            var objectCount = 0;
-            var fontCount = 0;
-            var imageCount = 0;
-            var contentCount = 0;
-            var pageCount = 0;
-
-            // Catalog is always the first object
-            objectCount++;
             _catalog.Id = "C1";
-            _catalog.ObjectNumber = objectCount;
+            _pageRoot.Id = "R1";
+            Properties.Id = "N1";
 
-            foreach (var font in _fonts)
-            {
-                fontCount++;
-                objectCount++;
-                font.Id = string.Format("F{0}", fontCount); 
-                font.ObjectNumber = objectCount;
-            }
-
-            foreach (var font in FontFiles)
-            {
-                objectCount++;
-                font.Id = _fonts.Where(f => f.FontName == font.Name).First().Id;
-                font.ObjectNumber = objectCount;
-                objectCount++; // take the actual font file into account as well
-            }
-
+            var imageCount = 0;
             foreach (var image in Images)
             {
                 imageCount++;
-                objectCount++;
                 image.Id = string.Format("I{0}", imageCount);
-                image.ObjectNumber = objectCount;
 
                 if (image.MaskData != null)
                 {
-                    // take any mask data into account as well
                     imageCount++;
-                    objectCount++;
                     image.MaskData.Id = string.Format("I{0}", imageCount);
-                    image.MaskData.ObjectNumber = objectCount;
                 }
             }
 
-            // Allow for the parent page
-            objectCount++;
-            _pageRoot.Id = "R1";
-            _pageRoot.ObjectNumber = objectCount;
-
-            // The header and footer content
-            foreach (var headerfooter in HeadersFooters)
+            var contentCount = 0;
+            var seen = new HashSet<Content>(ReferenceEqualityComparer.Instance);
+            foreach (var content in HeadersFooters.SelectMany(hf => hf.Contents).Concat(Pages.SelectMany(p => p.Contents)))
             {
-                foreach (var content in headerfooter.Contents)
+                if (!seen.Add(content))
                 {
-                    contentCount++;
-                    objectCount++;
-                    content.Id = string.Format("C{0}", contentCount);
-                    content.ObjectNumber = objectCount;
+                    // each content object is written once, as part of the page it is on
+                    throw new InvalidOperationException(
+                        $"The same {content.GetType().Name} object has been added to more than one page (or more than once). " +
+                        "Use a separate object for each page, or put content that repeats on every page in a header or footer.");
                 }
+
+                contentCount++;
+                content.Id = string.Format("C{0}", contentCount);
             }
 
-            // Do the page content
+            var pageCount = 0;
             foreach (var page in Pages)
             {
                 // Attach the page root to each page
                 page.PageRoot = _pageRoot;
 
-                foreach (var content in page.Contents)
+                pageCount++;
+                page.Id = string.Format("P{0}", pageCount);
+            }
+        }
+
+        private static void SortByZIndex(List<Content> contents)
+        {
+            contents.Sort((Content x, Content y) =>
+            {
+                if (x.ZIndex == 0 && y.ZIndex == 0) return 0;
+                else if (x.ZIndex == 0) return -1;
+                else if (y.ZIndex == 0) return 1;
+                else return x.ZIndex.CompareTo(y.ZIndex);
+            });
+        }
+
+        /// <summary>
+        /// Numbers each object that will be written to the document. Returns the number of objects.
+        /// </summary>
+        private int AssignObjectNumbers()
+        {
+            var next = 1;
+
+            // Catalog is always the first object
+            _catalog.ObjectNumber = next++;
+
+            foreach (var font in _fonts.Where(f => f.Used))
+            {
+                next = font.AssignObjectNumbers(next);
+            }
+
+            foreach (var image in Images.Where(i => i.IsPublished))
+            {
+                image.ObjectNumber = next++;
+
+                if (image.MaskData != null)
                 {
-                    contentCount++;
-                    objectCount++;
-                    content.Id = string.Format("C{0}", contentCount);
-                    content.ObjectNumber = objectCount;
+                    image.MaskData.ObjectNumber = next++;
                 }
             }
 
-            // Do the pages
+            _pageRoot.ObjectNumber = next++;
+
+            foreach (var content in HeadersFooters.SelectMany(hf => hf.Contents).Concat(Pages.SelectMany(p => p.Contents)))
+            {
+                content.ObjectNumber = next++;
+            }
+
             foreach (var page in Pages)
             {
-                pageCount++;
-                objectCount++;
-                page.Id = string.Format("P{0}", pageCount);
-                page.ObjectNumber = objectCount;
+                page.ObjectNumber = next++;
+            }
+
+            foreach (var page in Pages)
+            {
+                page.FirstAnnotationNumber = next;
+                next += page.Links.Count;
             }
 
             // Document Info properties
-            objectCount++;
-            Properties.Id = "N1";
-            Properties.ObjectNumber = objectCount;
+            Properties.ObjectNumber = next++;
 
-            return objectCount;
+            _catalog.MetadataNumber = 0;
+            _catalog.OutputProfileNumber = 0;
+            if (Conformance != PdfConformance.None)
+            {
+                _catalog.MetadataNumber = next++;
+                _catalog.OutputProfileNumber = next++;
+            }
+
+            return next - 1;
         }
-
     }
 
 }

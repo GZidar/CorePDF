@@ -1,52 +1,40 @@
 # CorePDF
-A basic PDF library that works with .net that you can do with as you please.
+A small, MIT licensed PDF generation library for .NET that you can do with as you please.
+
+Supports .NET 8 and later.
+
+## Features
+- Text with automatic wrapping, alignment and inline `<b>` / `<i>` styling
+- The 14 standard PDF fonts, using the Windows (WinAnsi) character set
+- Embedded TrueType fonts with full Unicode support (accented letters, Greek, Cyrillic,
+  CJK, etc). Font metrics are read from the font file and only the characters actually
+  used are embedded, which keeps documents small
+- Images (JPEG, PNG, GIF, etc, plus SVG drawn as vector paths), shapes, tables, barcodes,
+  headers and footers
+- Hyperlinks on any content
+- PDF/A-2b and PDF/A-2u archival documents
+- Deterministic output: the same document always produces exactly the same bytes
 
 ## Important
 This library does not (yet) support the creation of encrypted or secure PDFs. So it should not be used
-to store sensitive information. 
+to store sensitive information.
 
 ## Example
 ``` csharp
-document = new Document();
+var document = new Document();
 
 // Add any images that you want to include in the document
-document.Images = new List<Embeds.ImageFile>
+document.Images.Add(new ImageFile
 {
-    new Embeds.ImageFile
-    {
-        Name = "smiley",
-        FilePath = "smiley.jpg"
-    }
-};
+    Name = "smiley",
+    FilePath = "smiley.jpg"
+});
 
-// Add any extra fonts you want to include in the document. Please note that 
-// the widths (below) are based on the characters being organised in the ASCII order (see next line)
-//  !"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\]^_`abcdefghijklmnopqrstuvwxyz{|}~
-// note: space is the first non-zero sized character (position 32)
+// Embed any TrueType fonts you want to use. The font's metrics are read from the file.
 document.EmbedFont(new FontFile
 {
     Name = "GreatVibes-Regular",
-    BaseFont = "GreatVibes",
-    FilePath = "GreatVibes-Regular.ttf",
-    MaximumWidth = 2031, // this value is specific to the font being embeded
-    AverageWidth = 286, // this value is specific to the font being embeded
-    Ascent = 851, // this value is specific to the font being embeded
-    Descent = -400, // this value is specific to the font being embeded
-    StemV = 28, // this value is specific to the font being embeded
-    CapHeight = 850, // this value is specific to the font being embeded
-    ItalicAngle = 0, // this value is specific to the font being embeded
-    BoundingBoxLeft = -402, // this value is specific to the font being embeded
-    Widths = new List<int>
-    {
-        0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-        259, 350, 318, 746, 449, 621, 606, 158, 350, 518, 431, 458, 153, 406, 208,
-        548, 502, 378, 488, 458, 464, 445, 421, 488, 420, 435, 256, 255, 329, 458,
-        329, 382, 956, 712, 1041, 710, 1014, 815, 1048, 699, 1381, 912, 966, 1144,
-        712, 1329, 1039, 726, 890, 752, 1024, 901, 918, 942, 975, 1344, 807, 959,
-        677, 585, 867, 556, 370, 806, 211, 350, 345, 260, 367, 246, 198, 392, 332,
-        174, 177, 363, 212, 507, 335, 335, 336, 342, 260, 256, 200, 357, 262, 476,
-        333, 399, 341, 369, 485, 485, 485, 0
-    }
+    FilePath = "GreatVibes-Regular.ttf"
 });
 
 // Add the content for each page
@@ -70,6 +58,16 @@ document.Pages.Add(new Page
             PosX = 250,
             PosY = 400,
             TextAlignment = Alignment.Center
+        },
+        new TextBox
+        {
+            Text = "Visit <b>example.com</b>",
+            FontFace = Fonts.FONTSANSSERIF,
+            FontSize = 12,
+            PosX = 250,
+            PosY = 350,
+            TextAlignment = Alignment.Center,
+            Hyperlink = "https://example.com"
         },
         new Shape
         {
@@ -103,6 +101,40 @@ using (var filestream = new FileStream("sample.pdf", FileMode.Create, FileAccess
     document.Publish(filestream);
 }
 ```
+
+`Publish` works with any writable stream (including ones that can't seek, like an HTTP
+response body) and leaves the stream open.
+
+## Fonts and characters
+The standard fonts (`Fonts.FONTSANSSERIF`, `Fonts.FONTSERIF`, `Fonts.FONTFIXED` and their bold
+and italic variants) are built into every PDF reader, so they don't add anything to the size
+of the document. They are limited to the Windows-1252 character set, which covers English and
+most Western European languages.
+
+For anything else, embed a TrueType (`.ttf` or `.ttc`) font with `EmbedFont` and use its name
+as the `FontFace`. To use `<b>` and `<i>` with an embedded font, embed the bold and italic
+versions too and give them the same `BaseFont`:
+
+``` csharp
+document.EmbedFont(new FontFile { Name = "NotoSans", BaseFont = "NotoSans", FilePath = "NotoSans-Regular.ttf" });
+document.EmbedFont(new FontFile { Name = "NotoSans-Bold", BaseFont = "NotoSans", Bold = true, FilePath = "NotoSans-Bold.ttf" });
+```
+
+If text contains a character the chosen font can't show, `Publish` throws an exception that
+names the character, rather than producing a document with missing or garbled text.
+
+OpenType fonts with PostScript (CFF) outlines (usually `.otf` files) are not supported yet.
+
+## PDF/A
+Set `Conformance` to produce an archival PDF/A document:
+
+``` csharp
+var document = new Document { Conformance = PdfConformance.PdfA2B };
+```
+
+PDF/A documents must embed every font they use, so all text must use embedded fonts rather
+than the standard fonts. `Publish` explains what needs to change if a document can't comply.
+`PdfConformance.PdfA2U` additionally guarantees that all text can be extracted as Unicode.
 
 # License
 Copyright (c) 2024 CorePDF Contributors

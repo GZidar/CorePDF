@@ -1,4 +1,4 @@
-﻿using CorePDF.Pages;
+using CorePDF.Pages;
 using CorePDF.TypeFaces;
 using System;
 using System.Collections.Generic;
@@ -142,6 +142,9 @@ namespace CorePDF.Contents
                 posX = PosX;
             }
 
+            // the rows have been laid out so the area covered by the table is now known
+            SetLinkBounds(PosX, PosY, PosX + Width, posY);
+
             // do the borders
             if (Border != null)
             {
@@ -259,6 +262,23 @@ namespace CorePDF.Contents
             _encodedData = Encoding.UTF8.GetBytes(result);
 
             base.PrepareStream(compress);
+        }
+
+        internal override IEnumerable<LinkArea> GetLinks()
+        {
+            // any links on the table itself plus any on the content of its cells
+            var result = new List<LinkArea>(base.GetLinks());
+
+            foreach (var row in Rows)
+            {
+                foreach (var cell in row.Columns)
+                {
+                    if (cell.TextContent != null) result.AddRange(cell.TextContent.GetLinks());
+                    if (cell.ImageContent != null) result.AddRange(cell.ImageContent.GetLinks());
+                }
+            }
+
+            return result;
         }
     }
 

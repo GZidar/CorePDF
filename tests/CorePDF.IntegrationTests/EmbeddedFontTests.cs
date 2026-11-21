@@ -22,7 +22,8 @@ namespace CorePDF.IntegrationTests
 
             var pdf = Encoding.Latin1.GetString(Publish(document));
 
-            Assert.Contains("/BaseFont /GreatVibes", pdf);
+            // embedded fonts are subset, so their name carries a six letter subset tag
+            Assert.Matches(@"/BaseFont /[A-Z]{6}\+GreatVibes-Regular", pdf);
             Assert.Contains("/FontFile2", pdf);
         }
 
@@ -79,15 +80,7 @@ namespace CorePDF.IntegrationTests
             {
                 Name = "GreatVibes-Regular",
                 BaseFont = "GreatVibes",
-                FilePath = "GreatVibes-Regular.ttf",
-                MaximumWidth = 2031,
-                AverageWidth = 286,
-                Descent = -400,
-                StemV = 28,
-                Ascent = 851,
-                CapHeight = 850,
-                BoundingBoxLeft = -402,
-                Widths = Enumerable.Repeat(0, 32).Concat(Enumerable.Repeat(400, 96)).ToList()
+                FilePath = "GreatVibes-Regular.ttf"
             };
         }
     }

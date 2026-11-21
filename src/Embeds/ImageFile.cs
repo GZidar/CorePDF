@@ -1,4 +1,4 @@
-﻿using System.Runtime.Serialization;
+using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using SkiaSharp;
 using System;
@@ -1409,50 +1409,52 @@ namespace CorePDF.Embeds
             }
         }
 
+        /// <summary>
+        /// True if the image is a raster image that is published as an image object. SVG
+        /// images are drawn as paths directly in the page content instead.
+        /// </summary>
+        internal bool IsPublished => Type != PATHDATA && ByteData != null;
+
+        /// <summary>
+        /// Allows the PDF reader to smooth the image when it is scaled up. Not permitted in PDF/A documents.
+        /// </summary>
+        internal bool Interpolate { get; set; } = true;
+
         public override void Publish(StreamWriter stream)
         {
-            if (Type != PATHDATA)
-            {
-                // save the image data
-                var PDFData = new Dictionary<string, dynamic>
-                {
-                    { "/Type", "/XObject" },
-                    { "/Subtype", "/Image"},
-                    { "/Name", "/" + Id},
-                    { "/Width", Width.ToString()},
-                    { "/Height", Height.ToString()},
-                    { "/BitsPerComponent", _bitsPerComponent.ToString()}
-                };
+            if (!IsPublished) return;
 
-                switch (Type)
-                {
-                    case IMAGEDATA:
-                        PDFData.Add("/ColorSpace", "/DeviceRGB");
+            // save the image data
+            var PDFData = new Dictionary<string, dynamic>
+            {
+                { "/Type", "/XObject" },
+                { "/Subtype", "/Image"},
+                { "/Name", "/" + Id},
+                { "/Width", Width.ToString()},
+                { "/Height", Height.ToString()},
+                { "/BitsPerComponent", _bitsPerComponent.ToString()}
+            };
+
+            switch (Type)
+            {
+                case IMAGEDATA:
+                    PDFData.Add("/ColorSpace", "/DeviceRGB");
+                    if (Interpolate)
+                    {
                         PDFData.Add("/Interpolate", "true");
-                        if (MaskData != null)
-                        {
-                            PDFData.Add("/SMask", string.Format("{0} 0 R", MaskData.ObjectNumber));
-                        }
-                        break;
+                    }
+                    if (MaskData != null)
+                    {
+                        PDFData.Add("/SMask", string.Format("{0} 0 R", MaskData.ObjectNumber));
+                    }
+                    break;
 
-                    case IMAGEMASK:
-                        PDFData.Add("/ColorSpace", "/DeviceGray");
-                        break;
-                }
-
-                _pdfObject = PDFData;
+                case IMAGEMASK:
+                    PDFData.Add("/ColorSpace", "/DeviceGray");
+                    break;
             }
-            else
-            {
-                // save the svg file here
-                var PDFData = new Dictionary<string, dynamic>
-                {
-                    { "/Type", "/EmbeddedFile" },
-                    { "/Subtype", "/image#2Fsvg+xml"},
-                };
 
-                _pdfObject = PDFData;
-            }
+            _pdfObject = PDFData;
 
             base.Publish(stream);
 

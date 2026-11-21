@@ -1,4 +1,4 @@
-﻿using CorePDF.Pages;
+using CorePDF.Pages;
 using CorePDF.TypeFaces;
 using System;
 using System.Collections.Generic;
@@ -90,6 +90,7 @@ namespace CorePDF.Contents
             // reset the dash pattern
             result += "[] 0 d\n";
 
+            var barStart = curX;
             var textAreaStart = 0m;
             var textAreaWidth = 0m;
             var count = 0;
@@ -149,6 +150,8 @@ namespace CorePDF.Contents
 
             result += "S";
 
+            SetLinkBounds(barStart, PosY, curX, PosY + LineHeight);
+
             if (ShowText)
             {
                 if (textAreaStart == 0)
@@ -160,6 +163,10 @@ namespace CorePDF.Contents
                 }
 
                 var textFont = fonts.Find(f => f.FontName == TextFont);
+                if (textFont == null)
+                {
+                    throw new ArgumentException($"The font '{TextFont}' is not available. Use one of the standard fonts or embed it using Document.EmbedFont.", nameof(TextFont));
+                }
                 stringLength = base.StringLength(Text, FontSize, textFont);
                 curX = textAreaStart + ((textAreaWidth - stringLength) / 2);
 
@@ -177,7 +184,7 @@ namespace CorePDF.Contents
 
                 result += string.Format("{0} TL\n", FontSize);
                 result += string.Format("{0} {1} Td\n", curX, PosY);
-                result += string.Format("({0}) Tj\n", Text);
+                result += string.Format("{0} Tj\n", textFont.EncodeText(Text));
                 result += "ET";
             }
 

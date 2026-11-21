@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net11.0</TargetFramework>
+    <TargetFrameworks>net8.0;net11.0</TargetFrameworks>
 
     <IsPackable>false</IsPackable>
   </PropertyGroup>
@@ -14,6 +14,12 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\GreatVibes-Regular.ttf" Link="GreatVibes-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
