@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -52,7 +53,7 @@ namespace CorePDF.Embeds
         /// <summary>
         /// This will be calculated as the document is published
         /// </summary>
-        [JsonIgnore]
+        [JsonIgnore, IgnoreDataMember]
         public long FileBytePosition { get; set; }
 
         /// <summary>
@@ -71,6 +72,14 @@ namespace CorePDF.Embeds
         }
 
         public void EmbedFile()
+        {
+            using (new InvariantCultureScope())
+            {
+                EmbedFileCore();
+            }
+        }
+
+        private void EmbedFileCore()
         {
             // do nothing if there is no valid file or file data specified
             if (FileData == null && (string.IsNullOrEmpty(FilePath) || !File.Exists(FilePath))) return;

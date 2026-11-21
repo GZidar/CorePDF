@@ -55,24 +55,37 @@ namespace CorePDF
             {
                 Document = this
             };
-            _fonts.AddRange(Fonts.Styles());
-            _fonts.AddRange(Fonts.Barcodes());
         }
 
         public void EmbedFont(FontFile font)
         {
-            _fonts.Add(new Font
-            {
-                FontName = font.Name,
-                BaseFont = font.BaseFont,
-                Italic = font.Italic,
-                Bold = font.Bold,
-                Type = font.Type.ToString(),
-                Metrics = font.Widths
-            });
-
             FontFiles.Add(font);
+        }
 
+        /// <summary>
+        /// Builds the list of fonts available to the document: the standard and barcode fonts
+        /// plus one for each embedded font file. This is done at publish time, rather than in
+        /// EmbedFont, so that font files added any other way (e.g. directly to FontFiles or by
+        /// deserialising a document) are included, along with any changes made after embedding.
+        /// </summary>
+        private void BuildFontList()
+        {
+            _fonts = new List<Font>();
+            _fonts.AddRange(Fonts.Styles());
+            _fonts.AddRange(Fonts.Barcodes());
+
+            foreach (var font in FontFiles)
+            {
+                _fonts.Add(new Font
+                {
+                    FontName = font.Name,
+                    BaseFont = font.BaseFont,
+                    Italic = font.Italic,
+                    Bold = font.Bold,
+                    Type = font.Type.ToString(),
+                    Metrics = font.Widths
+                });
+            }
         }
 
         /// <summary>
@@ -81,6 +94,7 @@ namespace CorePDF
         /// <param name="baseStream"></param>
         public void Publish(Stream baseStream)
         {
+            using (new InvariantCultureScope())
             using (StreamWriter stream = new StreamWriter(baseStream, new UTF8Encoding(false)))
             {
                 stream.NewLine = "\n";
@@ -88,6 +102,8 @@ namespace CorePDF
                 // PDF Header
                 stream.WriteLine("%PDF-{0}", "1.4"); // the version of PDF 
                 stream.WriteLine("%\x82\x82\x82\x82"); // needed to allow editors to know that this is a binary file
+
+                BuildFontList();
 
                 // get the data for the embedded files
                 EmbedFiles();

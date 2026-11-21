@@ -1,5 +1,6 @@
 ﻿using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
-using Newtonsoft.Json;
+using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -29,19 +30,19 @@ namespace CorePDF
         /// <summary>
         /// The ID of the object within the PDF document - this value is set during document creation
         /// </summary>
-        [JsonIgnore]
+        [JsonIgnore, IgnoreDataMember]
         public string Id { get; set; }
 
         /// <summary>
         /// The number of the object within the PDF document - this value is set during document creation
         /// </summary>
-        [JsonIgnore]
+        [JsonIgnore, IgnoreDataMember]
         public int ObjectNumber { get; set; }
 
         /// <summary>
         /// This will be calculated as the document is published
         /// </summary>
-        [JsonIgnore]
+        [JsonIgnore, IgnoreDataMember]
         public long BytePosition { get; set; }
 
         /// <summary>

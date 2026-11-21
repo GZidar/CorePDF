@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
+using System.Text.Json.Serialization;
 using System.Text;
 
 namespace CorePDF.Embeds
@@ -13,6 +15,11 @@ namespace CorePDF.Embeds
     {
         public string Command { get; set; }
         public List<PDFPathParam> Parameters { get; set; }
+
+        [JsonConstructor]
+        private PDFPath()
+        {
+        }
 
         public PDFPath(string command, List<PDFPathParam> args = null)
         {
@@ -33,7 +40,9 @@ namespace CorePDF.Embeds
 
             foreach (var parm in Parameters)
             {
-                parms[count] = Math.Round(parm.Value, 5);
+                // format explicitly so the output doesn't depend on the decimal's internal scale
+                // (which varies between runtimes) or on the current culture's decimal separator
+                parms[count] = Math.Round(parm.Value, 5).ToString("0.0####", CultureInfo.InvariantCulture);
                 count++;
             }
 
