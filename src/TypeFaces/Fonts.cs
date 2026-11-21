@@ -43,7 +43,9 @@ namespace CorePDF.TypeFaces
             {
                 new Barcode
                 {
-                    CharacterSet = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\n\r",
+                    // values 0-94 are the printable characters, 95-102 (special codes that only appear as the
+                    // check digit) are characters 127-134, then the start (newline) and stop (carriage return) characters
+                    CharacterSet = " !\"#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~\u007F\u0080\u0081\u0082\u0083\u0084\u0085\u0086\n\r",
                     PreProcessor = (string input) =>
                     {
                         // code 128 has a check digit so this needs to be calculated prior to forming the barcode.
@@ -76,7 +78,8 @@ namespace CorePDF.TypeFaces
                         600,600,600,600,600,600,600,600,600,600,
                         600,600,600,600,600,600,600,600,600,600,
                         600,600,600,600,600,600,600,600,600,600,
-                        600,600,600,600,600,600,650
+                        600,600,600,600,600,600,600,600,600,600,
+                        600,600,600,600,650
                     },
                     Definitions = new List<string>
                     {
@@ -175,6 +178,14 @@ namespace CorePDF.TypeFaces
                         "10101111000",
                         "10100011110",
                         "10001011110",
+                        "10111101000",
+                        "10111100010",
+                        "11110101000",
+                        "11110100010",
+                        "10111011110",
+                        "10111101110",
+                        "11101011110",
+                        "11110101110",
                         "11010010000",
                         "1100011101011"
                     }

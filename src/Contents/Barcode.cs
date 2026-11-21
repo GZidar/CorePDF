@@ -59,9 +59,25 @@ namespace CorePDF.Contents
             }
 
             decimal curX = PosX;
-            // Add the start/stop characters
+            // Add the start/stop characters (and anything else the barcode type needs, eg: a check digit)
             var content = contentFont.PreProcessor(Text);
-            //var content = string.Format("{0}{1}{2}", contentFont.StartCharacter, Text, contentFont.StopCharacter);
+
+            // only printable characters can be encoded (the barcode fonts use other characters
+            // internally for the start, stop and special codes)
+            foreach (var c in Text)
+            {
+                if (c < 0x20 || c > 0x7E)
+                {
+                    throw new ArgumentException($"The character '{c}' can't be encoded in a {contentFont.FontName} barcode.", nameof(Text));
+                }
+            }
+            foreach (var c in content)
+            {
+                if (contentFont.CharacterSet.IndexOf(c) < 0)
+                {
+                    throw new ArgumentException($"The character '{c}' can't be encoded in a {contentFont.FontName} barcode.", nameof(Text));
+                }
+            }
             var stringLength = StringLength(content, FontSize, contentFont);
 
             switch (TextAlignment)
@@ -202,7 +218,7 @@ namespace CorePDF.Contents
         /// <returns></returns>
         protected int StringLength(string text, int fontSize, TypeFaces.Barcode font)
         {
-            char[] cArray = text.ToUpper().ToCharArray();
+            char[] cArray = text.ToCharArray();
             int width = 0;
             foreach (char c in cArray)
             {

@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Generates PDF/A documents that CI checks with the veraPDF validator -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\GreatVibes-Regular.ttf" Link="assets\GreatVibes-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\sample.png" Link="assets\sample.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\rpng2-bg16-toucan.png" Link="assets\rpng2-bg16-toucan.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\square.gif" Link="assets\square.gif">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\smiley.jpg" Link="assets\smiley.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\sample.svg" Link="assets\sample.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\CorePDF.csproj" />
+  </ItemGroup>
+
+</Project>

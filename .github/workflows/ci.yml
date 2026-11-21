@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+            11.0.x
+
+      - name: Unit tests
+        run: dotnet test tests/CorePDF.UnitTests --configuration Release
+
+      - name: Integration tests
+        run: dotnet test tests/CorePDF.IntegrationTests --configuration Release
+
+      - name: Pack
+        run: dotnet pack src/CorePDF.csproj --configuration Release --output artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nuget-package
+          path: artifacts/*.nupkg
+
+  pdfa:
+    name: PDF/A validation (veraPDF)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Generate PDF/A documents
+        run: dotnet run --project tests/CorePDF.PdfAValidation --configuration Release -- pdfa-output
+
+      - name: Validate with veraPDF
+        run: |
+          docker pull verapdf/cli:latest
+          docker run --rm verapdf/cli:latest --version
+
+          files=$(cd pdfa-output && ls *.pdf | sed 's#^#/data/#')
+          count=$(echo "$files" | wc -l)
+
+          # the PDF/A level of each file is detected from its metadata
+          set +e
+          docker run --rm -v "$PWD/pdfa-output:/data" verapdf/cli:latest --format xml $files > verapdf-report.xml
+          docker run --rm -v "$PWD/pdfa-output:/data" verapdf/cli:latest --format text $files | tee verapdf-summary.txt
+          set -e
+
+          passed=$(grep -c '^PASS' verapdf-summary.txt || true)
+          echo "$passed of $count documents passed"
+          if [ "$passed" -ne "$count" ]; then
+            echo "::error::veraPDF reported PDF/A violations - see the verapdf-report artifact for details"
+            exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: verapdf-report
+          path: |
+            pdfa-output/*.pdf
+            verapdf-report.xml
+            verapdf-summary.txt
