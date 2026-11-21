@@ -106,7 +106,7 @@ namespace CorePDF.Embeds
                 using (var fileStream = Open())
                 {
                     _encodedData = new byte[fileStream.Length];
-                    fileStream.Read(_encodedData, 0, (int)fileStream.Length);
+                    fileStream.ReadExactly(_encodedData);
                     fileStream.Position = 0;
 
                     Type = PATHDATA;
