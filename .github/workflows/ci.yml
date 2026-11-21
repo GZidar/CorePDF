@@ -17,9 +17,9 @@ jobs:
     name: Build and test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: |
             8.0.x
@@ -35,7 +35,7 @@ jobs:
       - name: Pack
         run: dotnet pack src/CorePDF.csproj --configuration Release --output artifacts
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: nuget-package
           path: artifacts/*.nupkg
@@ -44,9 +44,9 @@ jobs:
     name: PDF/A validation (veraPDF)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-dotnet@v4
+      - uses: actions/setup-dotnet@v6
         with:
           dotnet-version: |
             8.0.x
@@ -56,17 +56,20 @@ jobs:
         run: dotnet run --project tests/CorePDF.PdfAValidation --configuration Release -- pdfa-output
 
       - name: Validate with veraPDF
+        env:
+          # pinned so a new validator release can't change results without a deliberate update
+          VERAPDF_IMAGE: verapdf/cli:v1.30.4
         run: |
-          docker pull verapdf/cli:latest
-          docker run --rm verapdf/cli:latest --version
+          docker pull $VERAPDF_IMAGE
+          docker run --rm $VERAPDF_IMAGE --version
 
           files=$(cd pdfa-output && ls *.pdf | sed 's#^#/data/#')
           count=$(echo "$files" | wc -l)
 
           # the PDF/A level of each file is detected from its metadata
           set +e
-          docker run --rm -v "$PWD/pdfa-output:/data" verapdf/cli:latest --format xml $files > verapdf-report.xml
-          docker run --rm -v "$PWD/pdfa-output:/data" verapdf/cli:latest --format text $files | tee verapdf-summary.txt
+          docker run --rm -v "$PWD/pdfa-output:/data" $VERAPDF_IMAGE --format xml $files > verapdf-report.xml
+          docker run --rm -v "$PWD/pdfa-output:/data" $VERAPDF_IMAGE --format text $files | tee verapdf-summary.txt
           set -e
 
           passed=$(grep -c '^PASS' verapdf-summary.txt || true)
@@ -76,7 +79,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: verapdf-report
