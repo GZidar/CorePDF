@@ -1,7 +1,7 @@
 # CorePDF
 A small, MIT licensed PDF generation library for .NET that you can do with as you please.
 
-Supports .NET 8 and later.
+Supports .NET 8 and later, and has no dependencies on other packages.
 
 ## Features
 - Text with automatic wrapping, alignment and inline `<b>` / `<i>` styling
@@ -9,8 +9,8 @@ Supports .NET 8 and later.
 - Embedded TrueType fonts with full Unicode support (accented letters, Greek, Cyrillic,
   CJK, etc). Font metrics are read from the font file and only the characters actually
   used are embedded, which keeps documents small
-- Images (JPEG, PNG, GIF, etc, plus SVG drawn as vector paths), shapes, tables, barcodes,
-  headers and footers
+- Images (JPEG, PNG, GIF and BMP, plus SVG drawn as vector paths), shapes, tables, barcodes,
+  headers and footers. JPEG files are embedded as they are, without being re-encoded
 - Hyperlinks on any content
 - PDF/A-2b and PDF/A-2u archival documents
 - Deterministic output: the same document always produces exactly the same bytes
@@ -156,38 +156,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
-## Please note
-This codebase uses [SkiaSharp](https://github.com/mono/SkiaSharp) for image decoding,
-which is released under its own license. So please make sure that you include all
-relevant notices and attributions in any projects that include this codebase.
-
-### SkiaSharp License
-Copyright (c) 2015-2016 Xamarin, Inc.  
-Copyright (c) 2017-2018 Microsoft Corporation.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
-### Great Vibes Open Font License
-Copyright (c) 2012, TypeSETit, LLC (typesetit@att.net), 
-with Reserved Font Name "Great Vibes"
-
-This Font Software is licensed under the SIL Open Font License, Version 1.1.
-
-https://raw.githubusercontent.com/GZidar/CorePDF/development/OFL.txt

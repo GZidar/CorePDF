@@ -1,6 +1,6 @@
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
-using SkiaSharp;
+using CorePDF.Imaging;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -21,6 +21,9 @@ namespace CorePDF.Embeds
         public const string PATHDATA = "pathdata";
 
         private int _bitsPerComponent { get; set; } = 8;
+        private string _colorSpace = "DeviceRGB";
+        private bool _jpeg;
+        private string _decode;
 
         [JsonIgnore, IgnoreDataMember]
         public ImageFile MaskData { get; set; }
@@ -91,6 +94,19 @@ namespace CorePDF.Embeds
         {
             // do nothing if there is no valid file or file data specified
             if (FileData == null && (string.IsNullOrEmpty(FilePath) || !File.Exists(FilePath))) return;
+
+            // start afresh, as the image is embedded each time the document is published
+            MaskData = null;
+            _colorSpace = "DeviceRGB";
+            _jpeg = false;
+            _decode = null;
+
+            var data = FileData ?? File.ReadAllBytes(FilePath);
+            if (ImageDecoder.IsRaster(data))
+            {
+                EmbedRaster(data);
+                return;
+            }
 
             var rasterize = true;
 
@@ -1316,79 +1332,33 @@ namespace CorePDF.Embeds
                 return;
             }
 
-            // load the image from the file or from the passed in data
-            using (var codec = FileData == null ? SKCodec.Create(FilePath) : SKCodec.Create(SKData.CreateCopy(FileData)))
+            // neither SVG nor a recognised raster format: this reports the format isn't supported
+            EmbedRaster(data);
+        }
+
+        private void EmbedRaster(byte[] data)
+        {
+            var image = ImageDecoder.Decode(data);
+
+            Type = IMAGEDATA;
+            Width = image.Width;
+            Height = image.Height;
+            ByteData = image.Data;
+            _colorSpace = image.ColorSpace;
+            _jpeg = image.IsJpeg;
+            _decode = image.Decode;
+
+            if (image.Alpha != null)
             {
-                if (codec == null)
+                MaskData = new ImageFile
                 {
-                    throw new InvalidDataException("The image format is not supported or the image data is invalid.");
-                }
-
-                // decode straight to unpremultiplied RGBA so the colour and alpha channels can be split
-                var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
-                var decodeResult = codec.GetPixels(info, out byte[] rgbbuf);
-                if (decodeResult != SKCodecResult.Success)
-                {
-                    throw new InvalidDataException($"The image could not be decoded ({decodeResult}).");
-                }
-
-                Height = info.Height;
-                Width = info.Width;
-
-                var hasAlpha = false;
-
-                var abuf = new byte[rgbbuf.Length];
-                var rbuf = new byte[rgbbuf.Length];
-
-                var i = 0;
-                var a = 0;
-                var r = 0;
-                while (i < rgbbuf.Length)
-                {
-                    var bytes = new byte[4];
-                    bytes[0] = rgbbuf[i];
-                    i++;
-                    bytes[1] = rgbbuf[i];
-                    i++;
-                    bytes[2] = rgbbuf[i];
-                    i++;
-                    bytes[3] = rgbbuf[i];
-                    i++;
-
-                    if (bytes[3] < 255)
-                    {
-                        hasAlpha = true;
-                    }
-
-                    rbuf[r] = bytes[0];
-                    r++;
-                    rbuf[r] = bytes[1];
-                    r++;
-                    rbuf[r] = bytes[2];
-                    r++;
-                    abuf[a] = bytes[3];
-                    a++;
-                }
-
-                rgbbuf = new byte[r];
-
-                if (hasAlpha)
-                {
-                    MaskData = new ImageFile()
-                    {
-                        ByteData = new byte[a],
-                        Height = Height,
-                        Width = Width,
-                        Type = IMAGEMASK
-                    };
-
-                    Array.Copy(abuf, MaskData.ByteData, a);
-                }
-
-                Array.Copy(rbuf, rgbbuf, r);
-                ByteData = rgbbuf;
+                    ByteData = image.Alpha,
+                    Width = Width,
+                    Height = Height,
+                    Type = IMAGEMASK,
+                    _colorSpace = "DeviceGray"
+                };
             }
-
         }
 
         public override void PrepareStream(bool compress = false)
@@ -1401,13 +1371,20 @@ namespace CorePDF.Embeds
                 _encodedData = ByteData;
             }
 
-            base.PrepareStream(compress);
+            // raw image samples are always compressed; JPEG data is already compressed and is
+            // written as it is
+            base.PrepareStream(!_jpeg);
 
             if (MaskData != null)
             {
-                MaskData.PrepareStream(compress);
+                MaskData.PrepareStream(true);
             }
         }
+
+        /// <summary>
+        /// The colour space of the image samples (DeviceRGB, DeviceGray or DeviceCMYK)
+        /// </summary>
+        internal string ColorSpace => _colorSpace;
 
         /// <summary>
         /// True if the image is a raster image that is published as an image object. SVG
@@ -1438,7 +1415,15 @@ namespace CorePDF.Embeds
             switch (Type)
             {
                 case IMAGEDATA:
-                    PDFData.Add("/ColorSpace", "/DeviceRGB");
+                    PDFData.Add("/ColorSpace", "/" + _colorSpace);
+                    if (_jpeg)
+                    {
+                        PDFData.Add("/Filter", "/DCTDecode");
+                    }
+                    if (!string.IsNullOrEmpty(_decode))
+                    {
+                        PDFData.Add("/Decode", _decode);
+                    }
                     if (Interpolate)
                     {
                         PDFData.Add("/Interpolate", "true");

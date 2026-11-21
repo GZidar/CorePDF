@@ -1,5 +1,4 @@
 ﻿using CorePDF.Writing;
-using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using System;
@@ -8,6 +7,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 
 namespace CorePDF
@@ -68,18 +68,16 @@ namespace CorePDF
 
             if (compress && _encodedData != null)
             {
-                using (var orgStream = new MemoryStream(_encodedData))
+                // the zlib format is what the PDF FlateDecode filter expects
+                using (var cmpStream = new MemoryStream())
                 {
-                    using (var cmpStream = new MemoryStream())
+                    using (var zipStream = new ZLibStream(cmpStream, CompressionLevel.Optimal, leaveOpen: true))
                     {
-                        using (var zipStream = new DeflaterOutputStream(cmpStream))
-                        {
-                            orgStream.CopyTo(zipStream);
-                        }
-
-                        _compressed = true;
-                        _encodedData = cmpStream.ToArray();
+                        zipStream.Write(_encodedData, 0, _encodedData.Length);
                     }
+
+                    _compressed = true;
+                    _encodedData = cmpStream.ToArray();
                 }
             }
         }

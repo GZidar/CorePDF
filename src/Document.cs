@@ -1,4 +1,4 @@
-﻿using CorePDF.Conformance;
+using CorePDF.Conformance;
 using CorePDF.Contents;
 using CorePDF.Embeds;
 using CorePDF.Pages;
@@ -276,6 +276,15 @@ namespace CorePDF
                     "PDF/A documents must embed every font they use, but the standard font(s) {0} cannot be embedded. " +
                     "Embed a TrueType font with Document.EmbedFont and use it for this text instead.",
                     string.Join(", ", standardFonts.Select(f => "'" + f + "'"))));
+            }
+
+            // the document's output intent describes RGB colour, so CMYK images can't be described
+            var cmykImages = Images.Where(i => i.IsPublished && i.ColorSpace == "DeviceCMYK").Select(i => i.Name).ToList();
+            if (cmykImages.Count > 0)
+            {
+                throw new InvalidOperationException(string.Format(
+                    "PDF/A documents can't contain CMYK images, but {0} use CMYK colour. Convert them to RGB first.",
+                    string.Join(", ", cmykImages.Select(i => "'" + i + "'"))));
             }
         }
 

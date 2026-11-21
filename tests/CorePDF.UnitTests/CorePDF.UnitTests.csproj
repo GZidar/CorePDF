@@ -9,6 +9,9 @@
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.12.0" />
     <PackageReference Include="Moq" Version="4.21.0" />
+    <!-- used only as a reference decoder to check the library's own image decoders -->
+    <PackageReference Include="SkiaSharp" Version="4.157.0" />
+    <PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="4.157.0" />
     <PackageReference Include="xunit" Version="2.9.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1">
       <PrivateAssets>all</PrivateAssets>
@@ -18,6 +21,27 @@
 
   <ItemGroup>
     <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\GreatVibes-Regular.ttf" Link="GreatVibes-Regular.ttf">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\sample.png" Link="sample.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\square.png" Link="square.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\rpng2-bg16-toucan.png" Link="rpng2-bg16-toucan.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\square.gif" Link="square.gif">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\smiley.jpg" Link="smiley.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\square.jpg" Link="square.jpg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\..\editor\CorePDF.Editor.Presentation\src\assets\mapimage.jpeg" Link="mapimage.jpeg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
