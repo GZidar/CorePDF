@@ -1,11 +1,9 @@
 ﻿using Newtonsoft.Json;
-using SixLabors.ImageSharp;
-using SixLabors.ImageSharp.PixelFormats;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Text;
 using System.Xml;
 
@@ -1309,16 +1307,25 @@ namespace CorePDF.Embeds
             }
 
             // load the image from the file or from the passed in data
-            using (var image = (FileData == null ? Image.Load<Rgba32>(FilePath) : Image.Load<Rgba32>(FileData)))
+            using (var codec = FileData == null ? SKCodec.Create(FilePath) : SKCodec.Create(SKData.CreateCopy(FileData)))
             {
-                Height = image.Height;
-                Width = image.Width;
+                if (codec == null)
+                {
+                    throw new InvalidDataException("The image format is not supported or the image data is invalid.");
+                }
+
+                // decode straight to unpremultiplied RGBA so the colour and alpha channels can be split
+                var info = new SKImageInfo(codec.Info.Width, codec.Info.Height, SKColorType.Rgba8888, SKAlphaType.Unpremul);
+                var decodeResult = codec.GetPixels(info, out byte[] rgbbuf);
+                if (decodeResult != SKCodecResult.Success)
+                {
+                    throw new InvalidDataException($"The image could not be decoded ({decodeResult}).");
+                }
+
+                Height = info.Height;
+                Width = info.Width;
 
                 var hasAlpha = false;
-
-
-                byte[] rgbbuf = new byte[image.Width * image.Height * Unsafe.SizeOf<Rgba32>()];
-                image.CopyPixelDataTo(rgbbuf);
 
                 var abuf = new byte[rgbbuf.Length];
                 var rbuf = new byte[rgbbuf.Length];
