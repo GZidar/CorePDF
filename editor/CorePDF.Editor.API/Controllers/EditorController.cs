@@ -1,6 +1,6 @@
 ﻿using System;
 using Microsoft.AspNetCore.Mvc;
-using Newtonsoft.Json;
+using System.Text.Json;
 using System.IO;
 using CorePDF.Pages;
 using CorePDF.Contents;
@@ -11,11 +11,6 @@ namespace CorePDF.Editor.API.Controllers
     [Route("api/[controller]")]
     public class EditorController : Controller
     {
-        private JsonSerializerSettings _settings = new JsonSerializerSettings
-        {
-            TypeNameHandling = TypeNameHandling.Objects
-        };
-
         // GET api/editor
         [HttpGet]
         public IActionResult Get()
@@ -67,14 +62,27 @@ namespace CorePDF.Editor.API.Controllers
                 new Embeds.ImageFile()
             };
 
-            return new JsonResult(new { documentData = JsonConvert.SerializeObject(result, _settings) });
+            return new JsonResult(new { documentData = JsonSerializer.Serialize(result, DocumentJson.Options) });
         }
 
         // POST api/editor
         [HttpPost]
         public IActionResult Post([FromBody]string documentData = "")
         {
-            var document = JsonConvert.DeserializeObject<Document>(documentData, _settings);
+            Document document;
+            try
+            {
+                document = JsonSerializer.Deserialize<Document>(documentData, DocumentJson.Options);
+            }
+            catch (JsonException ex)
+            {
+                return BadRequest(new { error = $"The document JSON is invalid: {ex.Message}" });
+            }
+
+            if (document == null)
+            {
+                return BadRequest(new { error = "No document was provided." });
+            }
 
             using (var memstream = new MemoryStream())
             {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Text.Json.Serialization;
 using System.Text;
 
 namespace CorePDF.Embeds
@@ -14,6 +15,11 @@ namespace CorePDF.Embeds
     {
         public string Command { get; set; }
         public List<PDFPathParam> Parameters { get; set; }
+
+        [JsonConstructor]
+        private PDFPath()
+        {
+        }
 
         public PDFPath(string command, List<PDFPathParam> args = null)
         {

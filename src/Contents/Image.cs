@@ -1,9 +1,9 @@
 ﻿using CorePDF.Embeds;
 using CorePDF.Pages;
 using CorePDF.TypeFaces;
-using Newtonsoft.Json;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
 using System;
 
 namespace CorePDF.Contents
@@ -50,8 +50,7 @@ namespace CorePDF.Contents
             else
             {
                 // Need to rehydrate the path information 
-                var jsonString = Encoding.UTF8.GetString(imageFile.ByteData);
-                var tokens = JsonConvert.DeserializeObject<TokenisedSVG>(jsonString);
+                var tokens = JsonSerializer.Deserialize<TokenisedSVG>(imageFile.ByteData);
 
                 foreach (var path in tokens.Paths)
                 {

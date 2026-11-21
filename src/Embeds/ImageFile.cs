@@ -1,10 +1,12 @@
-﻿using Newtonsoft.Json;
+﻿using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Xml;
 
 namespace CorePDF.Embeds
@@ -20,7 +22,7 @@ namespace CorePDF.Embeds
 
         private int _bitsPerComponent { get; set; } = 8;
 
-        [JsonIgnore]
+        [JsonIgnore, IgnoreDataMember]
         public ImageFile MaskData { get; set; }
 
         /// <summary>
@@ -55,7 +57,7 @@ namespace CorePDF.Embeds
         /// aspect ratio.
         /// This field is calculated when the image file is embedded.
         /// </summary>
-        [JsonIgnore]
+        [JsonIgnore, IgnoreDataMember]
         public int Width { get; set; }
 
         /// <summary>
@@ -64,7 +66,7 @@ namespace CorePDF.Embeds
         /// aspect ratio.
         /// This field is calculated when the image file is embedded.
         /// </summary>
-        [JsonIgnore] 
+        [JsonIgnore, IgnoreDataMember]
         public int Height { get; set; }
 
         protected Stream Open()
@@ -1298,7 +1300,7 @@ namespace CorePDF.Embeds
                             }
                         }
 
-                        ByteData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(result));
+                        ByteData = JsonSerializer.SerializeToUtf8Bytes(result);
                     }
 
                 }

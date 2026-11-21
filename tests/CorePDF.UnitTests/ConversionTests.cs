@@ -1,6 +1,6 @@
 ﻿using CorePDF.Embeds;
 using Moq;
-using Newtonsoft.Json;
+using System.Text.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -55,7 +55,7 @@ namespace CorePDF.UnitTests
 
             // Act
             _sut.EmbedFile();
-            var result = JsonConvert.DeserializeObject<TokenisedSVG>(Encoding.UTF8.GetString(_sut.ByteData));
+            var result = JsonSerializer.Deserialize<TokenisedSVG>(_sut.ByteData);
 
             // Assert
             Assert.Equal(ImageFile.PATHDATA, _sut.Type);
@@ -80,7 +80,7 @@ namespace CorePDF.UnitTests
 
             // Act
             _sut.EmbedFile();
-            var result = JsonConvert.DeserializeObject<TokenisedSVG>(Encoding.UTF8.GetString(_sut.ByteData));
+            var result = JsonSerializer.Deserialize<TokenisedSVG>(_sut.ByteData);
 
             // Assert
             Assert.Contains(result.Paths, p => p.ToString().Replace(".0", "").Contains(position));
@@ -101,7 +101,7 @@ namespace CorePDF.UnitTests
 
             // Act
             _sut.EmbedFile();
-            var result = JsonConvert.DeserializeObject<TokenisedSVG>(Encoding.UTF8.GetString(_sut.ByteData));
+            var result = JsonSerializer.Deserialize<TokenisedSVG>(_sut.ByteData);
 
             // Assert
             Assert.Contains(result.Paths, p => p.ToString().Replace(".0", "").Contains(position));
@@ -124,7 +124,7 @@ namespace CorePDF.UnitTests
 
             // Act
             _sut.EmbedFile();
-            var result = JsonConvert.DeserializeObject<TokenisedSVG>(Encoding.UTF8.GetString(_sut.ByteData));
+            var result = JsonSerializer.Deserialize<TokenisedSVG>(_sut.ByteData);
 
             // Assert
             Assert.Contains(result.Paths, p => p.ToString().Replace(".0", "").Contains(position));

@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json;
+﻿using System.Runtime.Serialization;
+using System.Text.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -52,7 +53,7 @@ namespace CorePDF.Embeds
         /// <summary>
         /// This will be calculated as the document is published
         /// </summary>
-        [JsonIgnore]
+        [JsonIgnore, IgnoreDataMember]
         public long FileBytePosition { get; set; }
 
         /// <summary>
