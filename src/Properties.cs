@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text;
 
@@ -88,22 +89,14 @@ namespace CorePDF
 
         private string toPDFDate(DateTime input)
         {
-            var result = string.Format("(D:{0:yyyyMMddhhmmss}", input);
+            // UTC dates use offset zero; local and unspecified dates use the local time zone's
+            // offset at that date (so daylight saving is taken into account)
+            var offset = new DateTimeOffset(input).Offset;
+            var sign = offset < TimeSpan.Zero ? '-' : '+';
+            offset = offset.Duration();
 
-            var utcDate = DateTime.UtcNow;
-            var diff = input.Subtract(utcDate);
-            var utcHour = diff.Hours;
-            var utcMinute = diff.Minutes;
-            char sign = '+';
-            if (utcHour < 0)
-            {
-                sign = '-';
-            }
-            utcHour = Math.Abs(utcHour);
-
-            result += string.Format("{0}{1}'{2}')", sign, utcHour.ToString().PadLeft(2, '0'), utcMinute.ToString().PadLeft(2, '0'));
-
-            return result;
+            return string.Format(CultureInfo.InvariantCulture, "(D:{0:yyyyMMddHHmmss}{1}{2:00}'{3:00}')",
+                input, sign, offset.Hours, offset.Minutes);
         }
     }
 }

@@ -81,6 +81,7 @@ namespace CorePDF
         /// <param name="baseStream"></param>
         public void Publish(Stream baseStream)
         {
+            using (new InvariantCultureScope())
             using (StreamWriter stream = new StreamWriter(baseStream, new UTF8Encoding(false)))
             {
                 stream.NewLine = "\n";

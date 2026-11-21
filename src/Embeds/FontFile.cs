@@ -73,6 +73,14 @@ namespace CorePDF.Embeds
 
         public void EmbedFile()
         {
+            using (new InvariantCultureScope())
+            {
+                EmbedFileCore();
+            }
+        }
+
+        private void EmbedFileCore()
+        {
             // do nothing if there is no valid file or file data specified
             if (FileData == null && (string.IsNullOrEmpty(FilePath) || !File.Exists(FilePath))) return;
 
