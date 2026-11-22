@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="200">
+  <defs>
+    <clipPath id="circle">
+      <circle cx="60" cy="60" r="45"/>
+    </clipPath>
+    <clipPath id="two-shapes">
+      <rect x="130" y="10" width="40" height="100"/>
+      <rect x="170" y="40" width="60" height="40" transform="rotate(10 200 60)"/>
+    </clipPath>
+    <clipPath id="ring" clip-rule="evenodd">
+      <path d="M60 110 a40 40 0 1 0 0.1 0 Z M60 130 a20 20 0 1 0 0.1 0 Z" clip-rule="evenodd"/>
+    </clipPath>
+    <rect id="shape" x="30" y="150" width="40" height="40"/>
+    <clipPath id="by-use">
+      <use href="#shape"/>
+    </clipPath>
+  </defs>
+  <rect x="0" y="0" width="120" height="120" fill="tomato" clip-path="url(#circle)"/>
+  <g clip-path="url(#two-shapes)">
+    <rect x="120" y="0" width="120" height="120" fill="steelblue"/>
+    <circle cx="180" cy="60" r="30" fill="gold"/>
+  </g>
+  <rect x="10" y="100" width="100" height="100" fill="seagreen" clip-path="url(#ring)" transform="translate(130 0)"/>
+  <rect x="0" y="140" width="100" height="60" fill="purple" clip-path="url(#by-use)"/>
+</svg>

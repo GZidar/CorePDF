@@ -423,12 +423,7 @@ namespace CorePDF
 
             foreach (var image in Images.Where(i => i.IsPublished))
             {
-                image.ObjectNumber = next++;
-
-                if (image.MaskData != null)
-                {
-                    image.MaskData.ObjectNumber = next++;
-                }
+                next = image.AssignObjectNumbers(next);
             }
 
             _pageRoot.ObjectNumber = next++;

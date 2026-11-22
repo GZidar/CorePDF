@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220">
+  <rect x="0" y="0" width="40" height="20" fill="red" transform="translate(10 10)"/>
+  <rect x="0" y="0" width="40" height="20" fill="green" transform="translate(60,10) scale(1.5)"/>
+  <rect x="0" y="0" width="40" height="20" fill="blue" transform="rotate(30 150 30) translate(130,20)"/>
+  <rect x="20" y="80" width="40" height="40" fill="orange" transform="skewX(20)"/>
+  <rect x="100" y="60" width="40" height="40" fill="purple" transform="skewY(15)"/>
+  <rect x="0" y="0" width="40" height="40" fill="teal" transform="matrix(0.8 0.3 -0.3 0.8 160 120)"/>
+  <rect x="0" y="0" width="30" height="15" fill="black" transform="rotate(-45) translate(-80 180)"/>
+  <g transform="translate(20 160)"><g transform="scale(0.5)"><circle cx="40" cy="40" r="40" fill="crimson" transform="translate(10,0)"/></g></g>
+</svg>

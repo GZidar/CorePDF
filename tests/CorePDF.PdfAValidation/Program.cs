@@ -94,7 +94,7 @@ foreach (var conformance in new[] { PdfConformance.PdfA2B, PdfConformance.PdfA2U
 
     // every supported image type, including transparency
     var images = NewDocument(conformance, $"Images – PDF/A-{level}", compress: true);
-    foreach (var file in new[] { "sample.png", "rpng2-bg16-toucan.png", "square.gif", "smiley.jpg", "sample.svg" })
+    foreach (var file in new[] { "sample.png", "rpng2-bg16-toucan.png", "square.gif", "smiley.jpg", "sample.svg", "opacity.svg", "clip-path.svg", "css-styles.svg", "use-defs.svg" })
     {
         images.Images.Add(new ImageFile { Name = file, FilePath = Asset(file) });
     }
@@ -108,7 +108,12 @@ foreach (var conformance in new[] { PdfConformance.PdfA2B, PdfConformance.PdfA2U
             new Image { ImageName = "smiley.jpg", PosX = 300, PosY = 600, ScaleFactor = 0.4m },
             new Image { ImageName = "square.gif", PosX = 450, PosY = 450, Width = 60, Height = 60 },
             new Image { ImageName = "rpng2-bg16-toucan.png", PosX = 40, PosY = 380 },
-            new Image { ImageName = "sample.svg", PosX = 260, PosY = 100, ScaleFactor = 0.5m }
+            new Image { ImageName = "sample.svg", PosX = 260, PosY = 100, ScaleFactor = 0.5m },
+            // SVG images use transparency groups (opacity), clipping and reusable drawings
+            new Image { ImageName = "opacity.svg", PosX = 40, PosY = 150, ScaleFactor = 0.5m },
+            new Image { ImageName = "clip-path.svg", PosX = 160, PosY = 150, ScaleFactor = 0.5m },
+            new Image { ImageName = "css-styles.svg", PosX = 300, PosY = 380, ScaleFactor = 0.5m },
+            new Image { ImageName = "use-defs.svg", PosX = 420, PosY = 380, ScaleFactor = 0.5m, Hyperlink = "https://example.com/svg" }
         }
     });
     Save(images, $"pdfa-{level}-images.pdf");

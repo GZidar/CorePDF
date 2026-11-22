@@ -29,6 +29,21 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\CorePDF.IntegrationTests\Svg\Corpus\opacity.svg" Link="assets\opacity.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\CorePDF.IntegrationTests\Svg\Corpus\clip-path.svg" Link="assets\clip-path.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\CorePDF.IntegrationTests\Svg\Corpus\css-styles.svg" Link="assets\css-styles.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\CorePDF.IntegrationTests\Svg\Corpus\use-defs.svg" Link="assets\use-defs.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\CorePDF.csproj" />
   </ItemGroup>
 
