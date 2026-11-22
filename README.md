@@ -136,12 +136,20 @@ Supported: paths and the basic shapes, groups, `use`/`symbol`/`defs`, nested `sv
 transforms, `viewBox` and `preserveAspectRatio`, units (px, pt, mm, cm, in, etc), presentation
 attributes, `style` attributes and `<style>` sheets (type, class and id selectors), all CSS colour
 formats, opacity (including group opacity), linear and radial gradients (including spread methods
-and stops with varying opacity), strokes and dashes, fill rules and clipping paths.
+and stops with varying opacity), strokes and dashes, fill rules, clipping paths and text.
 This covers typical icons and the SVG exported by Illustrator and Inkscape.
 
-Not supported yet: text, embedded images, patterns, masks, filters and markers. An SVG
+Text (`text` and `tspan`) supports positioning (including per-character `x`, `y`, `dx` and `dy`
+lists), `text-anchor`, `dominant-baseline`, letter and word spacing, whitespace handling, fills,
+strokes and gradients. It is drawn with the document's fonts: an SVG `font-family` matches an
+embedded font by its `Name` or `BaseFont`, common font names (Arial, Helvetica, Times New Roman,
+Courier, etc) and the generic families use the standard fonts, and anything else uses the default
+serif font, as browsers do. Kerning and ligatures aren't applied yet.
+
+Not supported yet: text on a path, rotated characters, embedded images, patterns, masks, filters
+and markers. An SVG
 that uses them throws a `NotSupportedException` naming the feature, rather than being drawn
-incorrectly. (Text can be converted to outlines in most editors before exporting.)
+incorrectly.
 
 Accuracy is measured in the tests by comparing each converted SVG with a reference renderer,
 pixel by pixel.

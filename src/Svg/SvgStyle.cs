@@ -26,6 +26,14 @@ namespace CorePDF.Svg
         public string Color = "black";
         public bool Visible = true;
         public bool ClipEvenOdd;
+        public string FontFamily = "serif";
+        public double FontSize = 16;
+        public bool Bold;
+        public bool Italic;
+        public string TextAnchor = "start";
+        public string LetterSpacing = "normal";
+        public string WordSpacing = "normal";
+        public string DominantBaseline = "auto";
 
         // properties that aren't inherited
         public double Opacity = 1;
@@ -62,7 +70,9 @@ namespace CorePDF.Svg
             "fill", "fill-opacity", "fill-rule", "stroke", "stroke-width", "stroke-opacity", "stroke-linecap",
             "stroke-linejoin", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset", "color",
             "visibility", "clip-rule", "opacity", "display", "clip-path", "mask", "filter",
-            "marker", "marker-start", "marker-mid", "marker-end", "stop-color", "stop-opacity"
+            "marker", "marker-start", "marker-mid", "marker-end", "stop-color", "stop-opacity",
+            "font-family", "font-size", "font-weight", "font-style", "text-anchor", "letter-spacing",
+            "word-spacing", "dominant-baseline"
         };
 
         /// <summary>
@@ -100,6 +110,16 @@ namespace CorePDF.Svg
                 case "clip-path": ClipPath = value; break;
                 case "mask": Mask = value; break;
                 case "filter": Filter = value; break;
+                case "font-family": FontFamily = value; break;
+                case "font-size": FontSize = ParseFontSize(value, parent.FontSize); break;
+                case "font-weight":
+                    Bold = value == "bold" || value == "bolder" || (int.TryParse(value, out var weight) && weight >= 600);
+                    break;
+                case "font-style": Italic = value == "italic" || value.StartsWith("oblique"); break;
+                case "text-anchor": TextAnchor = value; break;
+                case "letter-spacing": LetterSpacing = value; break;
+                case "word-spacing": WordSpacing = value; break;
+                case "dominant-baseline": DominantBaseline = value; break;
                 case "stop-color": StopColor = value; break;
                 case "stop-opacity": StopOpacity = Opacity01(value, StopOpacity); break;
                 case "marker":
@@ -131,6 +151,51 @@ namespace CorePDF.Svg
                 case "clip-rule": ClipEvenOdd = parent.ClipEvenOdd; break;
                 case "opacity": Opacity = parent.Opacity; break;
                 case "display": Display = parent.Display; break;
+                case "font-family": FontFamily = parent.FontFamily; break;
+                case "font-size": FontSize = parent.FontSize; break;
+                case "font-weight": Bold = parent.Bold; break;
+                case "font-style": Italic = parent.Italic; break;
+                case "text-anchor": TextAnchor = parent.TextAnchor; break;
+                case "letter-spacing": LetterSpacing = parent.LetterSpacing; break;
+                case "word-spacing": WordSpacing = parent.WordSpacing; break;
+                case "dominant-baseline": DominantBaseline = parent.DominantBaseline; break;
+            }
+        }
+
+        private static readonly Dictionary<string, double> FontSizeKeywords = new Dictionary<string, double>
+        {
+            { "xx-small", 9 }, { "x-small", 10 }, { "small", 13 }, { "medium", 16 },
+            { "large", 18 }, { "x-large", 24 }, { "xx-large", 32 }, { "xxx-large", 48 }
+        };
+
+        /// <summary>
+        /// Reads a font size in CSS pixels. Relative sizes (em, %, larger, smaller) are relative
+        /// to the parent's font size.
+        /// </summary>
+        private static double ParseFontSize(string value, double parentSize)
+        {
+            value = value.Trim().ToLowerInvariant();
+            if (FontSizeKeywords.TryGetValue(value, out var keyword)) return keyword;
+            if (value == "larger") return parentSize * 1.2;
+            if (value == "smaller") return parentSize / 1.2;
+
+            var pos = 0;
+            if (!SvgNumber.TryRead(value, ref pos, out var number) || number < 0) return parentSize;
+
+            switch (value.Substring(pos))
+            {
+                case "":
+                case "px": return number;
+                case "pt": return number * 96 / 72;
+                case "pc": return number * 16;
+                case "mm": return number * 96 / 25.4;
+                case "cm": return number * 96 / 2.54;
+                case "in": return number * 96;
+                case "em":
+                case "rem": return number * parentSize;
+                case "ex": return number * parentSize / 2;
+                case "%": return number * parentSize / 100;
+                default: return parentSize;
             }
         }
 

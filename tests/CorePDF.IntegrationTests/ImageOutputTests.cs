@@ -122,6 +122,40 @@ namespace CorePDF.IntegrationTests
             Assert.Contains("'cmyk'", ex.Message);
         }
 
+        private static ImageFile SvgImage(string contents)
+        {
+            var svg = $@"<svg xmlns=""http://www.w3.org/2000/svg"" width=""200"" height=""50"">{contents}</svg>";
+            return new ImageFile { Name = "svg", FileData = System.Text.Encoding.UTF8.GetBytes(svg) };
+        }
+
+        [Fact]
+        public void SvgText_UsesTheDocumentsFonts()
+        {
+            var document = SinglePage(new Image { ImageName = "svg", PosX = 40, PosY = 400 });
+            document.EmbedFont(new FontFile { Name = "Vibes", FilePath = "GreatVibes-Regular.ttf" });
+            document.Images.Add(SvgImage(@"<text x=""10"" y=""30"" font-family=""Vibes"">Zażółć</text>"));
+
+            var pdf = Publish(document);
+
+            // the drawing refers to the embedded font, which is written (subset) once for the document
+            var form = Assert.Single(pdf.Objects.Values, o => o.Dictionary.Contains("/Subtype /Form"));
+            Assert.Matches(@"/Font << /F\d+ \d+ 0 R >>", form.Dictionary);
+            var font = Assert.Single(pdf.Fonts);
+            Assert.Contains("/Subtype /Type0", font.Dictionary);
+            Assert.Contains("TJ", form.StreamText);
+        }
+
+        [Fact]
+        public void SvgTextInAStandardFont_InPdfA_ThrowsHelpfulError()
+        {
+            var document = SinglePage(new Image { ImageName = "svg", PosX = 40, PosY = 400 });
+            document.Conformance = PdfConformance.PdfA2B;
+            document.Images.Add(SvgImage(@"<text x=""10"" y=""30"" font-family=""Arial"">Label</text>"));
+
+            var ex = Assert.Throws<InvalidOperationException>(() => Publish(document));
+            Assert.Contains("'Helvetica'", ex.Message);
+        }
+
         [Fact]
         public void RawByteData_IsStillSupported()
         {

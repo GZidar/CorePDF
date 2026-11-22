@@ -2,6 +2,7 @@ using CorePDF.Contents;
 using CorePDF.Embeds;
 using SkiaSharp;
 using Svg.Skia;
+using Svg.Skia.TypefaceProviders;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -22,6 +23,11 @@ namespace CorePDF.IntegrationTests.Svg
     /// becomes 151px) and fits the viewBox to that, whereas browsers and CorePDF use the exact
     /// size. To keep that from showing up as differences, corpus images have sizes that are a
     /// whole number of pixels; exact unit conversions are covered by the unit tests.
+    ///
+    /// Text is compared with a tolerance of one pixel's distance: the reference draws glyphs
+    /// with Skia's text rasteriser (which applies hinting and contrast adjustments) while our
+    /// output is drawn as exact outlines, so glyph edges differ slightly even when every glyph
+    /// is in exactly the same place. A layout error of more than a pixel is still caught.
     /// </summary>
     [Trait("Category", "Integration")]
     public class SvgAccuracyTests
@@ -55,8 +61,9 @@ namespace CorePDF.IntegrationTests.Svg
         {
             var path = Path.Combine(CORPUS, file);
 
-            // the reference rendering
+            // the reference rendering (text uses the test font)
             using var reference = new SKSvg();
+            reference.Settings.TypefaceProviders = new List<ITypefaceProvider> { new CustomTypefaceProvider(TestFonts.Plain) };
             reference.Load(path);
             var width = reference.Picture.CullRect.Width;
             var height = reference.Picture.CullRect.Height;
@@ -72,6 +79,7 @@ namespace CorePDF.IntegrationTests.Svg
             var image = new ImageFile { Name = "svg", FilePath = path };
             var document = SinglePage(new Image { ImageName = "svg", PosX = 0, PosY = 0 });
             document.Images.Add(image);
+            document.EmbedFont(new FontFile { Name = TestFonts.FAMILY, FilePath = TestFonts.Plain });
             var pdf = Publish(document);
 
             Assert.True(Math.Abs(image.Drawing.Width - width) <= 1 && Math.Abs(image.Drawing.Height - height) <= 1,
@@ -84,7 +92,7 @@ namespace CorePDF.IntegrationTests.Svg
             new PdfPageRenderer(pdf, actual.Canvas, (float)(width * scale / drawing.Width), (float)(height * scale / drawing.Height), (float)drawing.Height)
                 .RenderPage(pdf.Pages[0]);
 
-            var different = Compare(expected, actual, pixelWidth, pixelHeight);
+            var different = Compare(expected, actual, pixelWidth, pixelHeight, file.StartsWith("text-") ? 1 : 0);
             if (different > MAXDIFFERENT)
             {
                 SaveDiff(file, expected, actual);
@@ -100,20 +108,45 @@ namespace CorePDF.IntegrationTests.Svg
             return surface;
         }
 
-        private static double Compare(SKSurface expected, SKSurface actual, int width, int height)
+        /// <param name="radius">how far away (in pixels) a matching pixel may be</param>
+        private static double Compare(SKSurface expected, SKSurface actual, int width, int height, int radius)
         {
             using var a = expected.Snapshot();
             using var b = actual.Snapshot();
             using var pa = a.PeekPixels();
             using var pb = b.PeekPixels();
-            var ba = pa.GetPixelSpan();
-            var bb = pb.GetPixelSpan();
+            var ba = pa.GetPixelSpan().ToArray();
+            var bb = pb.GetPixelSpan().ToArray();
+
+            bool Matches(byte[] first, int i, byte[] second, int j)
+            {
+                return Math.Abs(first[i] - second[j]) <= PIXELTOLERANCE
+                    && Math.Abs(first[i + 1] - second[j + 1]) <= PIXELTOLERANCE
+                    && Math.Abs(first[i + 2] - second[j + 2]) <= PIXELTOLERANCE;
+            }
+
+            // a pixel is different if nothing near the same place in the other image matches it
+            bool HasMatchNearby(byte[] image, int x, int y, byte[] other)
+            {
+                for (var dy = -radius; dy <= radius; dy++)
+                {
+                    for (var dx = -radius; dx <= radius; dx++)
+                    {
+                        int nx = x + dx, ny = y + dy;
+                        if (nx < 0 || ny < 0 || nx >= width || ny >= height) continue;
+                        if (Matches(image, ((y * width) + x) * 4, other, ((ny * width) + nx) * 4)) return true;
+                    }
+                }
+                return false;
+            }
 
             var different = 0;
-            for (var i = 0; i < width * height * 4; i += 4)
+            for (var y = 0; y < height; y++)
             {
-                var diff = Math.Max(Math.Abs(ba[i] - bb[i]), Math.Max(Math.Abs(ba[i + 1] - bb[i + 1]), Math.Abs(ba[i + 2] - bb[i + 2])));
-                if (diff > PIXELTOLERANCE) different++;
+                for (var x = 0; x < width; x++)
+                {
+                    if (!HasMatchNearby(ba, x, y, bb) || !HasMatchNearby(bb, x, y, ba)) different++;
+                }
             }
             return different / (double)(width * height);
         }

@@ -132,7 +132,7 @@ namespace CorePDF.UnitTests
         }
 
         [Theory]
-        [InlineData("<text x='0' y='10'>Hello</text>", "text")]
+        [InlineData("<text x='0' y='10'>Hello</text>", "document")] // text needs the document's fonts
         [InlineData("<image href='a.png' width='10' height='10'/>", "image")]
         [InlineData("<pattern id='p'/><rect width='10' height='10' fill='url(#p)'/>", "patterns")]
         [InlineData("<mask id='m'/><rect width='10' height='10' mask='url(#m)'/>", "masks")]

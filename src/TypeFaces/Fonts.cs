@@ -273,25 +273,25 @@ namespace CorePDF.TypeFaces
             // Please Note: Any font other than the native PDF fonts will have to be embedded.
             return new List<Font>
             {
-                StandardFont(FONTSANSSERIF, FONTSANSSERIF, false, false, StandardFontMetrics.Helvetica),
-                StandardFont(FONTSANSSERIF, FONTSANSSERIFBOLD, true, false, StandardFontMetrics.HelveticaBold),
-                StandardFont(FONTSANSSERIF, FONTSANSSERIFBOLDITALIC, true, true, StandardFontMetrics.HelveticaBoldOblique),
-                StandardFont(FONTSANSSERIF, FONTSANSSERIFITALIC, false, true, StandardFontMetrics.HelveticaOblique),
-                StandardFont(FONTSERIF, FONTSERIF, false, false, StandardFontMetrics.TimesRoman),
-                StandardFont(FONTSERIF, FONTSERIFBOLD, true, false, StandardFontMetrics.TimesBold),
-                StandardFont(FONTSERIF, FONTSERIFBOLDITALIC, true, true, StandardFontMetrics.TimesBoldItalic),
-                StandardFont(FONTSERIF, FONTSERIFITALIC, false, true, StandardFontMetrics.TimesItalic),
-                StandardFont(FONTFIXED, FONTFIXED, false, false, StandardFontMetrics.Courier),
-                StandardFont(FONTFIXED, FONTFIXEDBOLD, true, false, StandardFontMetrics.CourierBold),
-                StandardFont(FONTFIXED, FONTFIXEDBOLDITALIC, true, true, StandardFontMetrics.CourierBoldOblique),
-                StandardFont(FONTFIXED, FONTFIXEDITALIC, false, true, StandardFontMetrics.CourierOblique),
+                StandardFont(FONTSANSSERIF, FONTSANSSERIF, false, false, StandardFontMetrics.Helvetica, 718, -207, 523),
+                StandardFont(FONTSANSSERIF, FONTSANSSERIFBOLD, true, false, StandardFontMetrics.HelveticaBold, 718, -207, 532),
+                StandardFont(FONTSANSSERIF, FONTSANSSERIFBOLDITALIC, true, true, StandardFontMetrics.HelveticaBoldOblique, 718, -207, 532),
+                StandardFont(FONTSANSSERIF, FONTSANSSERIFITALIC, false, true, StandardFontMetrics.HelveticaOblique, 718, -207, 523),
+                StandardFont(FONTSERIF, FONTSERIF, false, false, StandardFontMetrics.TimesRoman, 683, -217, 450),
+                StandardFont(FONTSERIF, FONTSERIFBOLD, true, false, StandardFontMetrics.TimesBold, 676, -205, 461),
+                StandardFont(FONTSERIF, FONTSERIFBOLDITALIC, true, true, StandardFontMetrics.TimesBoldItalic, 699, -205, 462),
+                StandardFont(FONTSERIF, FONTSERIFITALIC, false, true, StandardFontMetrics.TimesItalic, 683, -205, 441),
+                StandardFont(FONTFIXED, FONTFIXED, false, false, StandardFontMetrics.Courier, 629, -157, 426),
+                StandardFont(FONTFIXED, FONTFIXEDBOLD, true, false, StandardFontMetrics.CourierBold, 626, -142, 439),
+                StandardFont(FONTFIXED, FONTFIXEDBOLDITALIC, true, true, StandardFontMetrics.CourierBoldOblique, 626, -142, 439),
+                StandardFont(FONTFIXED, FONTFIXEDITALIC, false, true, StandardFontMetrics.CourierOblique, 629, -157, 426),
                 // the symbolic fonts use their own built-in encoding rather than WinAnsi
-                new Font { BaseFont = FONTSYMBOL, FontName = FONTSYMBOL, Encoding = null, Metrics = new List<int>(StandardFontMetrics.Symbol) },
-                new Font { BaseFont = FONTZAPF, FontName = FONTZAPF, Encoding = null, Metrics = new List<int>(StandardFontMetrics.ZapfDingbats) }
+                new Font { BaseFont = FONTSYMBOL, FontName = FONTSYMBOL, Encoding = null, Metrics = new List<int>(StandardFontMetrics.Symbol), Ascent = 1010, Descent = -293 },
+                new Font { BaseFont = FONTZAPF, FontName = FONTZAPF, Encoding = null, Metrics = new List<int>(StandardFontMetrics.ZapfDingbats), Ascent = 820, Descent = -143 }
             };
         }
 
-        private static Font StandardFont(string baseFont, string fontName, bool bold, bool italic, int[] metrics)
+        private static Font StandardFont(string baseFont, string fontName, bool bold, bool italic, int[] metrics, int ascent, int descent, int xHeight)
         {
             return new Font
             {
@@ -299,7 +299,10 @@ namespace CorePDF.TypeFaces
                 FontName = fontName,
                 Bold = bold,
                 Italic = italic,
-                Metrics = new List<int>(metrics)
+                Metrics = new List<int>(metrics),
+                Ascent = ascent,
+                Descent = descent,
+                XHeight = xHeight
             };
         }
 

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" font-family="Great Vibes">
+  <line x1="150" y1="0" x2="150" y2="130" stroke="#ccc"/>
+  <text x="150" y="40" font-size="28">Start here</text>
+  <text x="150" y="80" font-size="28" text-anchor="middle">Middle text</text>
+  <text x="150" y="120" font-size="28" text-anchor="end" fill="navy">Ending text</text>
+  <text x="10" y="170" font-size="30" fill="crimson" stroke="black" stroke-width="0.8">Outlined</text>
+  <text x="170" y="170" font-size="30" fill="none" stroke="green" stroke-width="1.2">Hollow</text>
+  <text x="10" y="210" font-size="24">Mixed <tspan fill="orange">colour</tspan> and <tspan font-size="34" fill="purple">size</tspan></text>
+  <text x="10" y="250" font-size="24" opacity="0.5" fill="blue">Faded words</text>
+  <text x="180" y="250" font-size="24" transform="rotate(-15 180 250)">Turned</text>
+  <text x="10" y="290" font-size="22">Shifted<tspan dx="15" dy="-6">up</tspan><tspan dy="6">back</tspan></text>
+</svg>

@@ -37,6 +37,10 @@ namespace CorePDF.TypeFaces
 
         internal override bool IsEmbedded => true;
 
+        internal override int Ascent => _ttf.ToPdfUnits(_ttf.Ascender);
+        internal override int Descent => _ttf.ToPdfUnits(_ttf.Descender);
+        internal override int XHeight => _ttf.ToPdfUnits(_ttf.XHeight);
+
         /// <summary>
         /// Calculates the width of the text in thousandths of the font size
         /// </summary>

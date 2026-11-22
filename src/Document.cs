@@ -239,7 +239,7 @@ namespace CorePDF
         {
             foreach (var image in Images)
             {
-                image.EmbedFile();
+                image.EmbedFile(_fonts);
                 image.Interpolate = Conformance == PdfConformance.None;
             }
         }

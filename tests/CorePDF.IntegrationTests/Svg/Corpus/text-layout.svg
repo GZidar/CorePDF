@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300" font-family="'Great Vibes', cursive" font-size="26">
+  <text x="10" y="40">
+    Collapsed     white
+    space   here
+  </text>
+  <text x="10" y="80" xml:space="preserve">Kept   spaces</text>
+  <text transform="translate(10 120)"><tspan x="0" y="0">First line</tspan><tspan x="0" y="30">Second line</tspan><tspan x="40" y="60">Third, indented</tspan></text>
+  <text x="10 40 70 100 130" y="250">Placed</text>
+  <text x="160" y="250" dx="0 5 10 15">Spread</text>
+  <text x="290" y="290" text-anchor="end"><tspan>Anchored</tspan> <tspan fill="teal">together</tspan></text>
+</svg>

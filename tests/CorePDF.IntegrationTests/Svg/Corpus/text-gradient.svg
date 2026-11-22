@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="160" font-family="Great Vibes">
+  <defs>
+    <linearGradient id="sunset"><stop offset="0" stop-color="#ff512f"/><stop offset="1" stop-color="#dd2476"/></linearGradient>
+    <linearGradient id="sea" x2="0" y2="1"><stop offset="0" stop-color="#2193b0"/><stop offset="1" stop-color="#6dd5ed"/></linearGradient>
+  </defs>
+  <text x="10" y="60" font-size="54" fill="url(#sunset)">Gradient</text>
+  <text x="10" y="140" font-size="54" fill="url(#sea)" stroke="url(#sunset)" stroke-width="1.5">Outline</text>
+</svg>
