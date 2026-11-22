@@ -1,7 +1,7 @@
 name: CI
 
+# runs on pull requests, and can be started manually from the Actions tab
 on:
-  push:
   pull_request:
   workflow_dispatch:
 
