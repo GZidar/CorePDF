@@ -1,4 +1,6 @@
 # CorePDF
+[![CI](https://github.com/GZidar/CorePDF/actions/workflows/ci.yml/badge.svg?branch=development)](https://github.com/GZidar/CorePDF/actions/workflows/ci.yml)
+
 A small, MIT licensed PDF generation library for .NET that you can do with as you please.
 
 Supports .NET 8 and later, and has no dependencies on other packages.
