@@ -34,6 +34,8 @@ namespace CorePDF.Svg
         public string Mask = "none";
         public string Filter = "none";
         public string Marker = "none";
+        public string StopColor = "black";
+        public double StopOpacity = 1;
 
         /// <summary>
         /// Properties that aren't inherited, which every element starts again with
@@ -47,6 +49,8 @@ namespace CorePDF.Svg
             child.Mask = "none";
             child.Filter = "none";
             child.Marker = "none";
+            child.StopColor = "black";
+            child.StopOpacity = 1;
             return child;
         }
 
@@ -58,7 +62,7 @@ namespace CorePDF.Svg
             "fill", "fill-opacity", "fill-rule", "stroke", "stroke-width", "stroke-opacity", "stroke-linecap",
             "stroke-linejoin", "stroke-miterlimit", "stroke-dasharray", "stroke-dashoffset", "color",
             "visibility", "clip-rule", "opacity", "display", "clip-path", "mask", "filter",
-            "marker", "marker-start", "marker-mid", "marker-end"
+            "marker", "marker-start", "marker-mid", "marker-end", "stop-color", "stop-opacity"
         };
 
         /// <summary>
@@ -96,6 +100,8 @@ namespace CorePDF.Svg
                 case "clip-path": ClipPath = value; break;
                 case "mask": Mask = value; break;
                 case "filter": Filter = value; break;
+                case "stop-color": StopColor = value; break;
+                case "stop-opacity": StopOpacity = Opacity01(value, StopOpacity); break;
                 case "marker":
                 case "marker-start":
                 case "marker-mid":

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240">
+  <defs>
+    <linearGradient id="pad" x1="0.3" x2="0.7"><stop offset="0" stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient>
+    <linearGradient id="repeat" x1="0.3" x2="0.5" spreadMethod="repeat"><stop offset="0" stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient>
+    <linearGradient id="reflect" x1="0.3" x2="0.5" spreadMethod="reflect"><stop offset="0" stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient>
+    <linearGradient id="reflect-angled" x1="0.4" y1="0.4" x2="0.5" y2="0.6" spreadMethod="reflect"><stop offset="0" stop-color="gold"/><stop offset="1" stop-color="green"/></linearGradient>
+    <radialGradient id="radial-repeat" r="0.15" spreadMethod="repeat"><stop offset="0" stop-color="white"/><stop offset="1" stop-color="black"/></radialGradient>
+    <radialGradient id="radial-reflect" r="0.2" spreadMethod="reflect"><stop offset="0" stop-color="yellow"/><stop offset="1" stop-color="purple"/></radialGradient>
+  </defs>
+  <rect x="10" y="10" width="220" height="30" fill="url(#pad)"/>
+  <rect x="10" y="50" width="220" height="30" fill="url(#repeat)"/>
+  <rect x="10" y="90" width="220" height="30" fill="url(#reflect)"/>
+  <rect x="10" y="130" width="70" height="100" fill="url(#reflect-angled)"/>
+  <rect x="90" y="130" width="70" height="100" fill="url(#radial-repeat)"/>
+  <rect x="170" y="130" width="60" height="100" fill="url(#radial-reflect)"/>
+</svg>

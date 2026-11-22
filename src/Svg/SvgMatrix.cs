@@ -72,8 +72,16 @@ namespace CorePDF.Svg
         /// </summary>
         public string ToPdf()
         {
+            return ToNumbers() + " cm";
+        }
+
+        /// <summary>
+        /// The six numbers of the matrix, eg: "1 0 0 1 10 20"
+        /// </summary>
+        public string ToNumbers()
+        {
             return string.Join(" ", SvgNumber.Format(A), SvgNumber.Format(B), SvgNumber.Format(C),
-                SvgNumber.Format(D), SvgNumber.Format(E), SvgNumber.Format(F)) + " cm";
+                SvgNumber.Format(D), SvgNumber.Format(E), SvgNumber.Format(F));
         }
 
         /// <summary>

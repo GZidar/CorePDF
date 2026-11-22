@@ -10,6 +10,17 @@ using System.Xml.Linq;
 namespace CorePDF.Svg
 {
     /// <summary>
+    /// A form XObject (a reusable drawing) used by an SVG image: a transparency group (for
+    /// opacity applied to several shapes) or a soft mask (for gradients with varying opacity)
+    /// </summary>
+    internal sealed class SvgForm
+    {
+        public string Content { get; set; }
+        public double[] BBox { get; set; }
+        public string Group { get; set; }
+    }
+
+    /// <summary>
     /// An SVG image converted to PDF drawing operations, ready to be written as a form XObject
     /// (a reusable drawing) with a bounding box of [0 0 Width Height].
     /// </summary>
@@ -27,42 +38,65 @@ namespace CorePDF.Svg
         public string Content { get; set; }
 
         /// <summary>
-        /// Transparency groups (used for opacity applied to groups of shapes), each written as
-        /// its own form XObject named Fm1, Fm2, etc.
+        /// Other forms the drawing uses, named Fm1, Fm2, etc. Each is written as its own object.
         /// </summary>
-        public List<(string Content, double[] BBox)> Groups { get; } = new List<(string, double[])>();
+        public List<SvgForm> Forms { get; } = new List<SvgForm>();
 
         /// <summary>
-        /// Graphics states for opacity, named GS1, GS2, etc: (fill opacity, stroke opacity)
+        /// Graphics state dictionaries, named GS1, GS2, etc
         /// </summary>
-        public List<(double Fill, double Stroke)> GraphicsStates { get; } = new List<(double, double)>();
+        public List<string> GraphicsStates { get; } = new List<string>();
 
         /// <summary>
-        /// The resources dictionary shared by the drawing and its groups
+        /// Pattern dictionaries (for gradients), named P1, P2, etc
         /// </summary>
-        public string Resources(Func<int, int> groupObjectNumber)
+        public List<string> Patterns { get; } = new List<string>();
+
+        /// <summary>
+        /// Shading dictionaries drawn directly with the sh operator, named Sh1, Sh2, etc
+        /// </summary>
+        public List<string> Shadings { get; } = new List<string>();
+
+        /// <summary>
+        /// The resources dictionary shared by the drawing and its forms. Dictionaries refer to
+        /// forms as {FmN}, which are replaced with references to the form objects.
+        /// </summary>
+        public string Resources(Func<int, int> formObjectNumber)
         {
             var result = new StringBuilder("<<");
-            if (GraphicsStates.Count > 0)
-            {
-                result.Append(" /ExtGState <<");
-                for (var i = 0; i < GraphicsStates.Count; i++)
-                {
-                    result.AppendFormat(" /GS{0} << /Type /ExtGState /ca {1} /CA {2} >>", i + 1,
-                        SvgNumber.Format(GraphicsStates[i].Fill), SvgNumber.Format(GraphicsStates[i].Stroke));
-                }
-                result.Append(" >>");
-            }
-            if (Groups.Count > 0)
+            Section(result, "ExtGState", "GS", GraphicsStates);
+            Section(result, "Pattern", "P", Patterns);
+            Section(result, "Shading", "Sh", Shadings);
+
+            if (Forms.Count > 0)
             {
                 result.Append(" /XObject <<");
-                for (var i = 0; i < Groups.Count; i++)
+                for (var i = 0; i < Forms.Count; i++)
                 {
-                    result.AppendFormat(" /Fm{0} {1} 0 R", i + 1, groupObjectNumber(i));
+                    result.AppendFormat(" /Fm{0} {{Fm{0}}}", i + 1);
                 }
                 result.Append(" >>");
             }
-            return result.Append(" >>").ToString();
+            result.Append(" >>");
+
+            var resources = result.ToString();
+            for (var i = Forms.Count; i >= 1; i--)
+            {
+                resources = resources.Replace("{Fm" + i + "}", formObjectNumber(i - 1) + " 0 R");
+            }
+            return resources;
+        }
+
+        private static void Section(StringBuilder result, string category, string prefix, List<string> entries)
+        {
+            if (entries.Count == 0) return;
+
+            result.Append(" /").Append(category).Append(" <<");
+            for (var i = 0; i < entries.Count; i++)
+            {
+                result.Append(" /").Append(prefix).Append(i + 1).Append(' ').Append(entries[i]);
+            }
+            result.Append(" >>");
         }
     }
 
@@ -82,8 +116,14 @@ namespace CorePDF.Svg
         private readonly Dictionary<string, XElement> _ids = new Dictionary<string, XElement>();
         private readonly SvgStyleSheet _styleSheet = new SvgStyleSheet();
         private readonly SvgDrawing _drawing = new SvgDrawing();
-        private readonly Dictionary<(double, double), int> _graphicsStates = new Dictionary<(double, double), int>();
+        private readonly Dictionary<string, int> _graphicsStates = new Dictionary<string, int>();
         private int _depth;
+
+        /// <summary>
+        /// The co-ordinate system of the form currently being written (relative to the image),
+        /// which patterns are positioned relative to
+        /// </summary>
+        private SvgMatrix _formBase = SvgMatrix.Identity;
 
         /// <summary>
         /// Returns true if the data looks like an SVG document
@@ -260,9 +300,12 @@ namespace CorePDF.Svg
                 }
 
                 var target = output;
+                var formBase = _formBase;
                 if (group)
                 {
+                    // a group is drawn as its own form, which patterns are positioned relative to
                     target = new StringBuilder();
+                    _formBase = inner;
                 }
 
                 var leafStyle = style;
@@ -291,9 +334,11 @@ namespace CorePDF.Svg
                         RenderUse(element, style, target, inner, viewport);
                         break;
                     default:
-                        RenderShape(element, name, style.Visible ? leafStyle : null, target, viewport);
+                        RenderShape(element, name, style.Visible ? leafStyle : null, target, inner, viewport);
                         break;
                 }
+
+                _formBase = formBase;
 
                 if (group)
                 {
@@ -367,57 +412,294 @@ namespace CorePDF.Svg
             }
         }
 
-        private void RenderShape(XElement element, string name, SvgStyle style, StringBuilder output, (double W, double H) viewport)
+        private void RenderShape(XElement element, string name, SvgStyle style, StringBuilder output, SvgMatrix ctm, (double W, double H) viewport)
         {
             if (style == null) return; // hidden
-
-            var fill = Paints(style.Fill, style) ? ResolveColor(style.Fill, style) : (SvgColor?)null;
-            var stroke = Paints(style.Stroke, style) ? ResolveColor(style.Stroke, style) : (SvgColor?)null;
-            var strokeWidth = Length(style.StrokeWidth, Diagonal(viewport)) ?? 1;
-            if (strokeWidth <= 0) stroke = null;
-
-            // lines have no area, so can only be stroked
-            if (name == "line") fill = null;
-
-            if (fill == null && stroke == null) return;
-
-            var fillAlpha = fill.HasValue ? style.FillOpacity * fill.Value.Alpha : 1;
-            var strokeAlpha = stroke.HasValue ? style.StrokeOpacity * stroke.Value.Alpha : 1;
-            if (fill.HasValue && fillAlpha <= 0) fill = null;
-            if (stroke.HasValue && strokeAlpha <= 0) stroke = null;
-            if (fill == null && stroke == null) return;
 
             var path = new StringBuilder();
             var writer = new SvgPathWriter(path);
             if (!WriteShapeGeometry(element, name, writer, viewport) || !writer.HasSegments) return;
+            var bounds = writer.Bounds;
 
-            if ((fill.HasValue && fillAlpha < 1) || (stroke.HasValue && strokeAlpha < 1))
+            // lines have no area, so can only be stroked
+            var fill = name == "line" ? null : Simplify(ResolvePaint(style.Fill, style, viewport), bounds);
+            var stroke = Simplify(ResolvePaint(style.Stroke, style, viewport), bounds);
+            var strokeWidth = Length(style.StrokeWidth, Diagonal(viewport)) ?? 1;
+            if (strokeWidth <= 0) stroke = null;
+            if (fill == null && stroke == null) return;
+
+            if (fill?.Gradient == null && stroke?.Gradient == null)
             {
-                output.AppendFormat("/GS{0} gs\n", GraphicsState(fill.HasValue ? fillAlpha : 1, stroke.HasValue ? strokeAlpha : 1));
+                // solid colours: the fill and stroke are painted together
+                var fillAlpha = fill == null ? 1 : style.FillOpacity * fill.Color.Alpha;
+                var strokeAlpha = stroke == null ? 1 : style.StrokeOpacity * stroke.Color.Alpha;
+                if (fill != null && fillAlpha <= 0) fill = null;
+                if (stroke != null && strokeAlpha <= 0) stroke = null;
+                if (fill == null && stroke == null) return;
+
+                if (fillAlpha < 1 || strokeAlpha < 1)
+                {
+                    output.AppendFormat("/GS{0} gs\n", GraphicsState(fill != null ? fillAlpha : 1, stroke != null ? strokeAlpha : 1));
+                }
+                if (fill != null) output.Append(fill.Color.ToPdf("rg")).Append('\n');
+                if (stroke != null)
+                {
+                    output.Append(stroke.Color.ToPdf("RG")).Append('\n');
+                    WriteStroke(output, style, strokeWidth, viewport);
+                }
+
+                output.Append(path);
+                if (fill != null && stroke != null) output.Append(style.FillEvenOdd ? "B*\n" : "B\n");
+                else if (fill != null) output.Append(style.FillEvenOdd ? "f*\n" : "f\n");
+                else output.Append("S\n");
+                return;
             }
 
-            if (fill.HasValue) output.Append(fill.Value.ToPdf("rg")).Append('\n');
-            if (stroke.HasValue)
+            // with a gradient, the fill and stroke are painted separately (fill first, as with
+            // the B operator), as each can need its own pattern, opacity and soft mask
+            if (fill != null)
             {
-                output.Append(stroke.Value.ToPdf("RG")).Append('\n');
-                output.Append(SvgNumber.Format(strokeWidth)).Append(" w\n");
-                if (style.LineCap != 0) output.Append(style.LineCap).Append(" J\n");
-                if (style.LineJoin != 0) output.Append(style.LineJoin).Append(" j\n");
-                output.Append(SvgNumber.Format(style.MiterLimit)).Append(" M\n");
-
-                var dashes = DashArray(style, viewport);
-                if (dashes != null)
+                var paint = new StringBuilder();
+                if (SetPaint(paint, fill, false, style.FillOpacity, bounds, ctm))
                 {
-                    output.Append('[').Append(string.Join(" ", dashes.Select(SvgNumber.Format))).Append("] ")
-                        .Append(SvgNumber.Format(Length(style.DashOffset, Diagonal(viewport)) ?? 0)).Append(" d\n");
+                    output.Append("q\n").Append(paint).Append(path).Append(style.FillEvenOdd ? "f*\n" : "f\n").Append("Q\n");
                 }
             }
 
-            output.Append(path);
+            if (stroke != null)
+            {
+                // the stroke extends past the geometry, which any soft mask has to cover
+                var extra = strokeWidth * Math.Max(1, style.MiterLimit);
+                var strokeBounds = new[] { bounds[0] - extra, bounds[1] - extra, bounds[2] + extra, bounds[3] + extra };
 
-            if (fill.HasValue && stroke.HasValue) output.Append(style.FillEvenOdd ? "B*\n" : "B\n");
-            else if (fill.HasValue) output.Append(style.FillEvenOdd ? "f*\n" : "f\n");
-            else output.Append("S\n");
+                var paint = new StringBuilder();
+                if (SetPaint(paint, stroke, true, style.StrokeOpacity, bounds, ctm, strokeBounds))
+                {
+                    output.Append("q\n").Append(paint);
+                    WriteStroke(output, style, strokeWidth, viewport);
+                    output.Append(path).Append("S\nQ\n");
+                }
+            }
+        }
+
+        private void WriteStroke(StringBuilder output, SvgStyle style, double strokeWidth, (double W, double H) viewport)
+        {
+            output.Append(SvgNumber.Format(strokeWidth)).Append(" w\n");
+            if (style.LineCap != 0) output.Append(style.LineCap).Append(" J\n");
+            if (style.LineJoin != 0) output.Append(style.LineJoin).Append(" j\n");
+            output.Append(SvgNumber.Format(style.MiterLimit)).Append(" M\n");
+
+            var dashes = DashArray(style, viewport);
+            if (dashes != null)
+            {
+                output.Append('[').Append(string.Join(" ", dashes.Select(SvgNumber.Format))).Append("] ")
+                    .Append(SvgNumber.Format(Length(style.DashOffset, Diagonal(viewport)) ?? 0)).Append(" d\n");
+            }
+        }
+
+        /// <summary>
+        /// Sets the fill or stroke paint. Returns false if nothing would be visible.
+        /// </summary>
+        /// <param name="bounds">the shape's geometry, which bounding box units refer to</param>
+        /// <param name="area">the area the paint has to cover (defaults to the geometry)</param>
+        private bool SetPaint(StringBuilder output, SvgPaint paint, bool stroke, double opacity, double[] bounds, SvgMatrix ctm, double[] area = null)
+        {
+            area ??= bounds;
+
+            if (paint.Gradient == null)
+            {
+                var alpha = opacity * paint.Color.Alpha;
+                if (alpha <= 0) return false;
+                if (alpha < 1) output.AppendFormat("/GS{0} gs\n", GraphicsState(stroke ? 1 : alpha, stroke ? alpha : 1));
+                output.Append(paint.Color.ToPdf(stroke ? "RG" : "rg")).Append('\n');
+                return true;
+            }
+
+            var gradient = paint.Gradient;
+
+            // the gradient's co-ordinates map onto the shape's bounding box, or are in user space
+            var units = gradient.ObjectBoundingBox
+                ? new SvgMatrix(bounds[2] - bounds[0], 0, 0, bounds[3] - bounds[1], bounds[0], bounds[1])
+                : SvgMatrix.Identity;
+            var toUser = units.Multiply(gradient.Transform);
+
+            // the area to cover, in the gradient's own co-ordinates
+            var inverse = toUser.Invert();
+            var corners = new[]
+            {
+                inverse.Apply(area[0], area[1]), inverse.Apply(area[2], area[1]),
+                inverse.Apply(area[0], area[3]), inverse.Apply(area[2], area[3])
+            };
+            var gradientArea = new[] { corners.Min(c => c.X), corners.Min(c => c.Y), corners.Max(c => c.X), corners.Max(c => c.Y) };
+
+            // the pattern is positioned relative to the form it is drawn in
+            var matrix = _formBase.Invert().Multiply(ctm).Multiply(toUser);
+            _drawing.Patterns.Add(string.Format("<< /Type /Pattern /PatternType 2 /Shading {0} /Matrix [{1}] >>",
+                SvgShading.Build(gradient, false, gradientArea), matrix.ToNumbers()));
+            var pattern = _drawing.Patterns.Count;
+
+            if (gradient.UniformOpacity)
+            {
+                var alpha = opacity * gradient.Stops[0].Color.Alpha;
+                if (alpha <= 0) return false;
+                if (alpha < 1) output.AppendFormat("/GS{0} gs\n", GraphicsState(stroke ? 1 : alpha, stroke ? alpha : 1));
+            }
+            else
+            {
+                // PDF shadings have no opacity, so the stops' opacity is applied with a soft mask
+                // drawn as a grey gradient (black is transparent, white opaque)
+                _drawing.Shadings.Add(SvgShading.Build(gradient, true, gradientArea));
+                var mask = AddForm(toUser.ToPdf() + "\n/Sh" + _drawing.Shadings.Count + " sh\n", area,
+                    "<< /Type /Group /S /Transparency /CS /DeviceGray >>");
+
+                output.AppendFormat("/GS{0} gs\n", GraphicsState(string.Format(
+                    "<< /Type /ExtGState /SMask << /Type /Mask /S /Luminosity /G {{Fm{0}}} >> /ca {1} /CA {1} >>", mask, SvgNumber.Format(opacity))));
+            }
+
+            output.AppendFormat(stroke ? "/Pattern CS /P{0} SCN\n" : "/Pattern cs /P{0} scn\n", pattern);
+            return true;
+        }
+
+        /// <summary>
+        /// A fill or stroke: either a colour or a gradient
+        /// </summary>
+        private sealed class SvgPaint
+        {
+            public SvgColor Color;
+            public SvgGradient Gradient;
+        }
+
+        /// <summary>
+        /// Resolves a fill or stroke value. Returns null for none.
+        /// </summary>
+        private SvgPaint ResolvePaint(string value, SvgStyle style, (double W, double H) viewport)
+        {
+            value = value.Trim();
+            if (value == "none") return null;
+
+            if (value.StartsWith("url(", StringComparison.OrdinalIgnoreCase))
+            {
+                var close = value.IndexOf(')');
+                var fallback = close >= 0 ? value.Substring(close + 1).Trim() : "";
+                var referenced = close >= 0 ? ResolveReference(value.Substring(0, close + 1)) : null;
+
+                switch (referenced?.Name.LocalName)
+                {
+                    case "linearGradient":
+                    case "radialGradient":
+                        var gradient = ResolveGradient(referenced, viewport);
+                        return gradient.Stops.Count == 0 ? null : new SvgPaint { Gradient = gradient };
+                    case "pattern":
+                        throw new NotSupportedException("SVG patterns are not supported yet.");
+                }
+
+                // a missing or invalid reference uses the fallback colour (if there is one)
+                if (fallback.Length == 0 || fallback == "none") return null;
+                value = fallback;
+            }
+
+            return new SvgPaint { Color = ResolveColor(value, style) };
+        }
+
+        /// <summary>
+        /// Gradients that can't vary are drawn in a solid colour. A gradient using bounding box
+        /// units on a shape with no width or height can't be drawn at all.
+        /// </summary>
+        private static SvgPaint Simplify(SvgPaint paint, double[] bounds)
+        {
+            var gradient = paint?.Gradient;
+            if (gradient == null) return paint;
+
+            if (gradient.ObjectBoundingBox && (bounds[2] - bounds[0] <= 0 || bounds[3] - bounds[1] <= 0)) return null;
+            if (gradient.IsSolid) return new SvgPaint { Color = gradient.Stops[gradient.Stops.Count - 1].Color };
+            return paint;
+        }
+
+        /// <summary>
+        /// Reads a gradient element, along with anything it inherits through href
+        /// </summary>
+        private SvgGradient ResolveGradient(XElement element, (double W, double H) viewport)
+        {
+            var chain = new List<XElement>();
+            for (var current = element; current != null && !chain.Contains(current); current = Referenced(current))
+            {
+                if (current.Name.LocalName != "linearGradient" && current.Name.LocalName != "radialGradient") break;
+                chain.Add(current);
+            }
+
+            string Attribute(string name) => chain.Select(c => (string)c.Attribute(name)).FirstOrDefault(v => v != null);
+
+            var gradient = new SvgGradient
+            {
+                Radial = element.Name.LocalName == "radialGradient",
+                ObjectBoundingBox = Attribute("gradientUnits") != "userSpaceOnUse",
+                Transform = SvgMatrix.Parse(Attribute("gradientTransform")),
+                Spread = Attribute("spreadMethod") is string spread && (spread == "reflect" || spread == "repeat") ? spread : "pad"
+            };
+
+            // bounding box units are fractions of the box (percentages are fractions too)
+            double Coordinate(string name, string fallback, double reference)
+            {
+                var value = Attribute(name) ?? fallback;
+                return (gradient.ObjectBoundingBox ? Length(value, 1) : Length(value, reference)) ?? Length(fallback, gradient.ObjectBoundingBox ? 1 : reference) ?? 0;
+            }
+
+            if (gradient.Radial)
+            {
+                gradient.Cx = Coordinate("cx", "50%", viewport.W);
+                gradient.Cy = Coordinate("cy", "50%", viewport.H);
+                gradient.R = Coordinate("r", "50%", Diagonal(viewport));
+                gradient.Fx = Attribute("fx") != null ? Coordinate("fx", "50%", viewport.W) : gradient.Cx;
+                gradient.Fy = Attribute("fy") != null ? Coordinate("fy", "50%", viewport.H) : gradient.Cy;
+                gradient.Fr = Coordinate("fr", "0%", Diagonal(viewport));
+            }
+            else
+            {
+                gradient.X1 = Coordinate("x1", "0%", viewport.W);
+                gradient.Y1 = Coordinate("y1", "0%", viewport.H);
+                gradient.X2 = Coordinate("x2", "100%", viewport.W);
+                gradient.Y2 = Coordinate("y2", "0%", viewport.H);
+            }
+
+            // the stops come from the first gradient in the chain that has any
+            var holder = chain.FirstOrDefault(c => c.Elements().Any(e => e.Name.LocalName == "stop"));
+            if (holder != null)
+            {
+                // stops inherit (eg: color, for currentColor) from where the gradient is defined
+                var holderStyle = InheritedStyle(holder);
+                var previous = 0.0;
+                foreach (var stop in holder.Elements().Where(e => e.Name.LocalName == "stop"))
+                {
+                    var style = ComputeStyle(stop, holderStyle);
+                    var offsetText = ((string)stop.Attribute("offset") ?? "0").Trim();
+                    var offset = Length(offsetText, 1) ?? 0;
+
+                    // offsets are clamped to 0..1 and can't go backwards
+                    offset = Math.Max(previous, Math.Clamp(offset, 0, 1));
+                    previous = offset;
+
+                    var color = ResolveColor(style.StopColor, style);
+                    gradient.Stops.Add((offset, new SvgColor(color.R, color.G, color.B, color.Alpha * style.StopOpacity)));
+                }
+            }
+
+            return gradient;
+        }
+
+        /// <summary>
+        /// The style of an element computed through its ancestors, for elements (like gradients)
+        /// that are used from somewhere other than where they are defined
+        /// </summary>
+        private SvgStyle InheritedStyle(XElement element)
+        {
+            var parent = element.Parent == null ? new SvgStyle() : InheritedStyle(element.Parent);
+            return ComputeStyle(element, parent);
+        }
+
+        private XElement Referenced(XElement element)
+        {
+            var href = (string)element.Attribute("href") ?? (string)element.Attribute(XName.Get("href", "http://www.w3.org/1999/xlink"));
+            return href != null && href.StartsWith("#") && _ids.TryGetValue(href.Substring(1), out var referenced) ? referenced : null;
         }
 
         /// <summary>
@@ -606,15 +888,9 @@ namespace CorePDF.Svg
         /// <summary>
         /// True if a fill or stroke value paints anything
         /// </summary>
-        private bool Paints(string paint, SvgStyle style)
+        private static bool Paints(string paint, SvgStyle style)
         {
-            paint = paint.Trim();
-            if (paint == "none") return false;
-            if (paint.StartsWith("url(", StringComparison.OrdinalIgnoreCase))
-            {
-                throw new NotSupportedException($"SVG gradients and patterns are not supported yet ({paint}).");
-            }
-            return true;
+            return paint.Trim() != "none";
         }
 
         private static SvgColor ResolveColor(string paint, SvgStyle style)
@@ -655,12 +931,16 @@ namespace CorePDF.Svg
 
         private int GraphicsState(double fill, double stroke)
         {
-            var key = (Math.Round(fill, 4), Math.Round(stroke, 4));
-            if (!_graphicsStates.TryGetValue(key, out var index))
+            return GraphicsState(string.Format("<< /Type /ExtGState /ca {0} /CA {1} >>", SvgNumber.Format(fill), SvgNumber.Format(stroke)));
+        }
+
+        private int GraphicsState(string dictionary)
+        {
+            if (!_graphicsStates.TryGetValue(dictionary, out var index))
             {
-                _drawing.GraphicsStates.Add(key);
+                _drawing.GraphicsStates.Add(dictionary);
                 index = _drawing.GraphicsStates.Count;
-                _graphicsStates[key] = index;
+                _graphicsStates[dictionary] = index;
             }
             return index;
         }
@@ -679,8 +959,13 @@ namespace CorePDF.Svg
             };
             var bbox = new[] { corners.Min(c => c.X), corners.Min(c => c.Y), corners.Max(c => c.X), corners.Max(c => c.Y) };
 
-            _drawing.Groups.Add((content, bbox));
-            return _drawing.Groups.Count;
+            return AddForm(content, bbox, "<< /Type /Group /S /Transparency >>");
+        }
+
+        private int AddForm(string content, double[] bbox, string group)
+        {
+            _drawing.Forms.Add(new SvgForm { Content = content, BBox = bbox, Group = group });
+            return _drawing.Forms.Count;
         }
 
         #endregion

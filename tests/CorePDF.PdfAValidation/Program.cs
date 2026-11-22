@@ -94,7 +94,7 @@ foreach (var conformance in new[] { PdfConformance.PdfA2B, PdfConformance.PdfA2U
 
     // every supported image type, including transparency
     var images = NewDocument(conformance, $"Images – PDF/A-{level}", compress: true);
-    foreach (var file in new[] { "sample.png", "rpng2-bg16-toucan.png", "square.gif", "smiley.jpg", "sample.svg", "opacity.svg", "clip-path.svg", "css-styles.svg", "use-defs.svg" })
+    foreach (var file in new[] { "sample.png", "rpng2-bg16-toucan.png", "square.gif", "smiley.jpg", "sample.svg", "opacity.svg", "clip-path.svg", "css-styles.svg", "use-defs.svg", "gradient-opacity.svg", "gradient-spread.svg" })
     {
         images.Images.Add(new ImageFile { Name = file, FilePath = Asset(file) });
     }
@@ -113,7 +113,10 @@ foreach (var conformance in new[] { PdfConformance.PdfA2B, PdfConformance.PdfA2U
             new Image { ImageName = "opacity.svg", PosX = 40, PosY = 150, ScaleFactor = 0.5m },
             new Image { ImageName = "clip-path.svg", PosX = 160, PosY = 150, ScaleFactor = 0.5m },
             new Image { ImageName = "css-styles.svg", PosX = 300, PosY = 380, ScaleFactor = 0.5m },
-            new Image { ImageName = "use-defs.svg", PosX = 420, PosY = 380, ScaleFactor = 0.5m, Hyperlink = "https://example.com/svg" }
+            new Image { ImageName = "use-defs.svg", PosX = 420, PosY = 380, ScaleFactor = 0.5m, Hyperlink = "https://example.com/svg" },
+            // gradients: shading patterns, including soft masks for stops with varying opacity
+            new Image { ImageName = "gradient-opacity.svg", PosX = 300, PosY = 150, ScaleFactor = 0.5m },
+            new Image { ImageName = "gradient-spread.svg", PosX = 420, PosY = 150, ScaleFactor = 0.5m }
         }
     });
     Save(images, $"pdfa-{level}-images.pdf");

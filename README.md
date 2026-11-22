@@ -135,10 +135,11 @@ many times it is placed in the document.
 Supported: paths and the basic shapes, groups, `use`/`symbol`/`defs`, nested `svg` elements,
 transforms, `viewBox` and `preserveAspectRatio`, units (px, pt, mm, cm, in, etc), presentation
 attributes, `style` attributes and `<style>` sheets (type, class and id selectors), all CSS colour
-formats, opacity (including group opacity), strokes and dashes, fill rules and clipping paths.
+formats, opacity (including group opacity), linear and radial gradients (including spread methods
+and stops with varying opacity), strokes and dashes, fill rules and clipping paths.
 This covers typical icons and the SVG exported by Illustrator and Inkscape.
 
-Not supported yet: text, embedded images, gradients, patterns, masks, filters and markers. An SVG
+Not supported yet: text, embedded images, patterns, masks, filters and markers. An SVG
 that uses them throws a `NotSupportedException` naming the feature, rather than being drawn
 incorrectly. (Text can be converted to outlines in most editors before exporting.)
 

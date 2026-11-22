@@ -194,7 +194,7 @@ namespace CorePDF.Embeds
             if (_drawing != null)
             {
                 _firstGroupNumber = next;
-                next += _drawing.Groups.Count;
+                next += _drawing.Forms.Count;
             }
             return next;
         }
@@ -265,7 +265,7 @@ namespace CorePDF.Embeds
 
         /// <summary>
         /// Writes an SVG image as a form XObject (a reusable drawing), followed by any
-        /// transparency groups it uses
+        /// other forms it uses (transparency groups and soft masks)
         /// </summary>
         private void PublishDrawing(StreamWriter stream)
         {
@@ -280,17 +280,17 @@ namespace CorePDF.Embeds
             };
             base.Publish(stream);
 
-            for (var i = 0; i < _drawing.Groups.Count; i++)
+            for (var i = 0; i < _drawing.Forms.Count; i++)
             {
-                var (content, bbox) = _drawing.Groups[i];
+                var form = _drawing.Forms[i];
                 new RawObject(_firstGroupNumber + i, new Dictionary<string, dynamic>
                 {
                     { "/Type", "/XObject" },
                     { "/Subtype", "/Form" },
-                    { "/BBox", "[" + string.Join(" ", Array.ConvertAll(bbox, SvgNumber.Format)) + "]" },
-                    { "/Group", "<< /Type /Group /S /Transparency >>" },
+                    { "/BBox", "[" + string.Join(" ", Array.ConvertAll(form.BBox, SvgNumber.Format)) + "]" },
+                    { "/Group", form.Group },
                     { "/Resources", resources }
-                }, Encoding.ASCII.GetBytes(content), compress: true).Publish(stream);
+                }, Encoding.ASCII.GetBytes(form.Content), compress: true).Publish(stream);
             }
         }
     }

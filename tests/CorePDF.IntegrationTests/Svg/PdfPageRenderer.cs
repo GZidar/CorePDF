@@ -2,15 +2,16 @@ using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
 using System.Text;
-using System.Text.RegularExpressions;
 
 namespace CorePDF.IntegrationTests.Svg
 {
     /// <summary>
     /// Draws the vector graphics of a PDF page with SkiaSharp, so the output can be compared with
-    /// a reference rendering. It understands the path, colour, graphics state, transparency and
-    /// form XObject operators CorePDF writes; text and images are ignored.
+    /// a reference rendering. It understands the path, colour, graphics state, transparency,
+    /// shading pattern, soft mask and form XObject operators CorePDF writes; text and images are
+    /// ignored.
     /// </summary>
     internal sealed class PdfPageRenderer
     {
@@ -23,6 +24,8 @@ namespace CorePDF.IntegrationTests.Svg
             public SKMatrix Ctm = SKMatrix.Identity;
             public SKColor Fill = SKColors.Black;
             public SKColor Stroke = SKColors.Black;
+            public string FillPattern;
+            public string StrokePattern;
             public float FillAlpha = 1;
             public float StrokeAlpha = 1;
             public float LineWidth = 1;
@@ -32,6 +35,8 @@ namespace CorePDF.IntegrationTests.Svg
             public float[] Dash;
             public float DashPhase;
             public SKPath Clip;
+            public Dictionary<string, object> SoftMask;
+            public SKMatrix SoftMaskMatrix;
 
             public GraphicsState Clone()
             {
@@ -39,6 +44,16 @@ namespace CorePDF.IntegrationTests.Svg
                 copy.Clip = Clip == null ? null : new SKPath(Clip);
                 return copy;
             }
+        }
+
+        /// <summary>
+        /// The content stream being drawn: its resources, and the co-ordinate system it started
+        /// in (which patterns are positioned relative to)
+        /// </summary>
+        private sealed class Context
+        {
+            public Dictionary<string, object> Resources;
+            public SKMatrix FormBase;
         }
 
         /// <param name="scaleX">horizontal pixels per PDF unit</param>
@@ -55,18 +70,38 @@ namespace CorePDF.IntegrationTests.Svg
 
         public void RenderPage(PdfObjectInfo page)
         {
-            var contents = Regex.Match(page.Dictionary, @"/Contents \[([^\]]*)\]").Groups[1].Value;
+            var dictionary = (Dictionary<string, object>)PdfObjectParser.Parse(page.Dictionary);
             var data = new StringBuilder();
-            foreach (Match reference in Regex.Matches(contents, @"\d+ 0 R"))
+            foreach (PdfReference reference in (List<object>)dictionary["Contents"])
             {
-                var stream = _pdf.Resolve(reference.Value).Stream;
+                var stream = _pdf.Objects[reference.Number].Stream;
                 if (stream != null) data.Append(Encoding.Latin1.GetString(stream)).Append('\n');
             }
 
-            Render(data.ToString(), page.Dictionary, new GraphicsState());
+            Render(data.ToString(), new Context { Resources = Dict(dictionary["Resources"]), FormBase = SKMatrix.Identity }, new GraphicsState());
         }
 
-        private void Render(string content, string resources, GraphicsState initial)
+        #region Objects
+
+        private object Resolve(object value)
+        {
+            return value is PdfReference reference ? PdfObjectParser.Parse(_pdf.Objects[reference.Number].Dictionary) : value;
+        }
+
+        private Dictionary<string, object> Dict(object value) => (Dictionary<string, object>)Resolve(value);
+
+        private static float F(object value) => Convert.ToSingle(value, CultureInfo.InvariantCulture);
+
+        private static float[] Floats(object value) => ((List<object>)value).Select(F).ToArray();
+
+        private object Resource(Context context, string category, string name)
+        {
+            return Dict(context.Resources[category])[name];
+        }
+
+        #endregion
+
+        private void Render(string content, Context context, GraphicsState initial)
         {
             var state = initial;
             var stack = new Stack<GraphicsState>();
@@ -100,11 +135,14 @@ namespace CorePDF.IntegrationTests.Svg
                         state.Dash = dash.Count == 0 ? null : dash.ConvertAll(d => Convert.ToSingle(d, CultureInfo.InvariantCulture)).ToArray();
                         state.DashPhase = N(1);
                         break;
-                    case "rg": state.Fill = new SKColor(B(N(0)), B(N(1)), B(N(2))); break;
-                    case "RG": state.Stroke = new SKColor(B(N(0)), B(N(1)), B(N(2))); break;
-                    case "g": state.Fill = new SKColor(B(N(0)), B(N(0)), B(N(0))); break;
-                    case "G": state.Stroke = new SKColor(B(N(0)), B(N(0)), B(N(0))); break;
-                    case "gs": ApplyExtGState(resources, (string)operands[0], state); break;
+                    case "rg": state.Fill = new SKColor(B(N(0)), B(N(1)), B(N(2))); state.FillPattern = null; break;
+                    case "RG": state.Stroke = new SKColor(B(N(0)), B(N(1)), B(N(2))); state.StrokePattern = null; break;
+                    case "g": state.Fill = new SKColor(B(N(0)), B(N(0)), B(N(0))); state.FillPattern = null; break;
+                    case "G": state.Stroke = new SKColor(B(N(0)), B(N(0)), B(N(0))); state.StrokePattern = null; break;
+                    case "cs": case "CS": break; // the colour space is implied by the colour operator that follows
+                    case "scn": if (operands.Count == 1 && operands[0] is string fillPattern) state.FillPattern = fillPattern; break;
+                    case "SCN": if (operands.Count == 1 && operands[0] is string strokePattern) state.StrokePattern = strokePattern; break;
+                    case "gs": ApplyExtGState(context, (string)operands[0], state); break;
                     case "m": path.MoveTo(N(0), N(1)); break;
                     case "l": path.LineTo(N(0), N(1)); break;
                     case "c": path.CubicTo(N(0), N(1), N(2), N(3), N(4), N(5)); break;
@@ -114,16 +152,17 @@ namespace CorePDF.IntegrationTests.Svg
                     case "re": path.AddRect(SKRect.Create(N(0), N(1), N(2), N(3))); break;
                     case "W": clipPending = SKPathFillType.Winding; break;
                     case "W*": clipPending = SKPathFillType.EvenOdd; break;
-                    case "f": case "F": Paint(path, state, SKPathFillType.Winding, fill: true, stroke: false); break;
-                    case "f*": Paint(path, state, SKPathFillType.EvenOdd, fill: true, stroke: false); break;
-                    case "S": Paint(path, state, SKPathFillType.Winding, fill: false, stroke: true); break;
-                    case "s": path.Close(); Paint(path, state, SKPathFillType.Winding, fill: false, stroke: true); break;
-                    case "B": Paint(path, state, SKPathFillType.Winding, fill: true, stroke: true); break;
-                    case "B*": Paint(path, state, SKPathFillType.EvenOdd, fill: true, stroke: true); break;
-                    case "b": path.Close(); Paint(path, state, SKPathFillType.Winding, fill: true, stroke: true); break;
-                    case "b*": path.Close(); Paint(path, state, SKPathFillType.EvenOdd, fill: true, stroke: true); break;
+                    case "f": case "F": Paint(path, state, context, SKPathFillType.Winding, fill: true, stroke: false); break;
+                    case "f*": Paint(path, state, context, SKPathFillType.EvenOdd, fill: true, stroke: false); break;
+                    case "S": Paint(path, state, context, SKPathFillType.Winding, fill: false, stroke: true); break;
+                    case "s": path.Close(); Paint(path, state, context, SKPathFillType.Winding, fill: false, stroke: true); break;
+                    case "B": Paint(path, state, context, SKPathFillType.Winding, fill: true, stroke: true); break;
+                    case "B*": Paint(path, state, context, SKPathFillType.EvenOdd, fill: true, stroke: true); break;
+                    case "b": path.Close(); Paint(path, state, context, SKPathFillType.Winding, fill: true, stroke: true); break;
+                    case "b*": path.Close(); Paint(path, state, context, SKPathFillType.EvenOdd, fill: true, stroke: true); break;
                     case "n": break;
-                    case "Do": DrawXObject(resources, (string)operands[0], state); break;
+                    case "sh": DrawShading(context, (string)operands[0], state); break;
+                    case "Do": DrawXObject(context, (string)operands[0], state); break;
                 }
 
                 if (op.Name is "f" or "F" or "f*" or "S" or "s" or "B" or "B*" or "b" or "b*" or "n")
@@ -143,39 +182,72 @@ namespace CorePDF.IntegrationTests.Svg
             }
         }
 
-        private void Paint(SKPath path, GraphicsState state, SKPathFillType fillType, bool fill, bool stroke)
+        private void Paint(SKPath path, GraphicsState state, Context context, SKPathFillType fillType, bool fill, bool stroke)
         {
             path.FillType = fillType;
-            _canvas.Save();
-            if (state.Clip != null)
-            {
-                _canvas.ClipPath(state.Clip, antialias: true);
-            }
-            _canvas.SetMatrix(SKMatrix.Concat(_device, state.Ctm));
 
-            if (fill)
+            WithSoftMask(state, () =>
             {
-                using var paint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = state.Fill.WithAlpha(B(state.FillAlpha)) };
-                _canvas.DrawPath(path, paint);
-            }
-            if (stroke)
-            {
-                using var paint = new SKPaint
+                _canvas.Save();
+                if (state.Clip != null)
                 {
-                    IsAntialias = true,
-                    Style = SKPaintStyle.Stroke,
-                    Color = state.Stroke.WithAlpha(B(state.StrokeAlpha)),
-                    StrokeWidth = state.LineWidth,
-                    StrokeCap = state.Cap,
-                    StrokeJoin = state.Join,
-                    StrokeMiter = state.MiterLimit
-                };
-                if (state.Dash != null)
-                {
-                    paint.PathEffect = SKPathEffect.CreateDash(state.Dash.Length % 2 == 0 ? state.Dash : Repeat(state.Dash), state.DashPhase);
+                    _canvas.ClipPath(state.Clip, antialias: true);
                 }
-                _canvas.DrawPath(path, paint);
+                _canvas.SetMatrix(SKMatrix.Concat(_device, state.Ctm));
+
+                if (fill)
+                {
+                    using var paint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = state.Fill.WithAlpha(B(state.FillAlpha)) };
+                    if (state.FillPattern != null) paint.Shader = PatternShader(context, state.FillPattern, state, state.FillAlpha);
+                    _canvas.DrawPath(path, paint);
+                }
+                if (stroke)
+                {
+                    using var paint = new SKPaint
+                    {
+                        IsAntialias = true,
+                        Style = SKPaintStyle.Stroke,
+                        Color = state.Stroke.WithAlpha(B(state.StrokeAlpha)),
+                        StrokeWidth = state.LineWidth,
+                        StrokeCap = state.Cap,
+                        StrokeJoin = state.Join,
+                        StrokeMiter = state.MiterLimit
+                    };
+                    if (state.StrokePattern != null) paint.Shader = PatternShader(context, state.StrokePattern, state, state.StrokeAlpha);
+                    if (state.Dash != null)
+                    {
+                        paint.PathEffect = SKPathEffect.CreateDash(state.Dash.Length % 2 == 0 ? state.Dash : Repeat(state.Dash), state.DashPhase);
+                    }
+                    _canvas.DrawPath(path, paint);
+                }
+                _canvas.Restore();
+            });
+        }
+
+        /// <summary>
+        /// Draws with the current soft mask (if any): the drawing is made on its own layer, which
+        /// the mask's luminosity is then applied to as opacity
+        /// </summary>
+        private void WithSoftMask(GraphicsState state, Action draw)
+        {
+            if (state.SoftMask == null)
+            {
+                draw();
+                return;
             }
+
+            _canvas.SaveLayer();
+            draw();
+
+            using var maskPaint = new SKPaint { BlendMode = SKBlendMode.DstIn, ColorFilter = SKColorFilter.CreateLumaColor() };
+            _canvas.SaveLayer(maskPaint);
+            var group = (PdfReference)state.SoftMask["G"];
+            var form = _pdf.Objects[group.Number];
+            var formDictionary = (Dictionary<string, object>)PdfObjectParser.Parse(form.Dictionary);
+            Render(Encoding.Latin1.GetString(form.Stream), new Context { Resources = Dict(formDictionary["Resources"]), FormBase = state.SoftMaskMatrix },
+                new GraphicsState { Ctm = state.SoftMaskMatrix, Clip = state.Clip });
+            _canvas.Restore();
+
             _canvas.Restore();
         }
 
@@ -187,64 +259,143 @@ namespace CorePDF.IntegrationTests.Svg
             return result;
         }
 
-        private void ApplyExtGState(string resources, string name, GraphicsState state)
+        private void ApplyExtGState(Context context, string name, GraphicsState state)
         {
-            var dict = ResourceEntry(resources, "ExtGState", name);
-            var ca = Regex.Match(dict, @"/ca ([\d.]+)");
-            var CA = Regex.Match(dict, @"/CA ([\d.]+)");
-            if (ca.Success) state.FillAlpha = float.Parse(ca.Groups[1].Value, CultureInfo.InvariantCulture);
-            if (CA.Success) state.StrokeAlpha = float.Parse(CA.Groups[1].Value, CultureInfo.InvariantCulture);
+            var dictionary = Dict(Resource(context, "ExtGState", name));
+            if (dictionary.TryGetValue("ca", out var ca)) state.FillAlpha = F(ca);
+            if (dictionary.TryGetValue("CA", out var CA)) state.StrokeAlpha = F(CA);
+            if (dictionary.TryGetValue("SMask", out var mask))
+            {
+                state.SoftMask = mask is PdfName ? null : Dict(mask);
+                state.SoftMaskMatrix = state.Ctm;
+            }
         }
 
-        private void DrawXObject(string resources, string name, GraphicsState state)
+        #region Shadings
+
+        /// <summary>
+        /// A shader for a shading pattern. The pattern is positioned relative to the co-ordinate
+        /// system of the form it is used in, while the shader works relative to the current
+        /// transformation matrix (which the canvas is set to).
+        /// </summary>
+        private SKShader PatternShader(Context context, string name, GraphicsState state, float alpha)
         {
-            var entry = ResourceEntry(resources, "XObject", name);
-            var xobject = _pdf.Resolve(entry);
-            if (!xobject.Dictionary.Contains("/Subtype /Form")) return; // images aren't compared
+            var pattern = Dict(Resource(context, "Pattern", name));
+            var matrix = pattern.TryGetValue("Matrix", out var m) ? Floats(m) : new float[] { 1, 0, 0, 1, 0, 0 };
+            var patternMatrix = new SKMatrix(matrix[0], matrix[2], matrix[4], matrix[1], matrix[3], matrix[5], 0, 0, 1);
+
+            state.Ctm.TryInvert(out var inverse);
+            var local = SKMatrix.Concat(inverse, SKMatrix.Concat(context.FormBase, patternMatrix));
+            return Shader(Dict(pattern["Shading"]), local, alpha);
+        }
+
+        private void DrawShading(Context context, string name, GraphicsState state)
+        {
+            using var paint = new SKPaint { IsAntialias = true, Shader = Shader(Dict(Resource(context, "Shading", name)), SKMatrix.Identity, state.FillAlpha) };
+            _canvas.Save();
+            if (state.Clip != null) _canvas.ClipPath(state.Clip, antialias: true);
+            _canvas.SetMatrix(SKMatrix.Concat(_device, state.Ctm));
+            _canvas.DrawPaint(paint);
+            _canvas.Restore();
+        }
+
+        private SKShader Shader(Dictionary<string, object> shading, SKMatrix local, float alpha)
+        {
+            var type = (int)F(shading["ShadingType"]);
+            var coords = Floats(shading["Coords"]);
+            var domain = shading.TryGetValue("Domain", out var d) ? Floats(d) : new float[] { 0, 1 };
+            var gray = ((PdfName)shading["ColorSpace"]).Value == "DeviceGray";
+            var function = Dict(shading["Function"]);
+
+            // sample the function finely enough to follow every piece of a stitched function
+            var samples = Math.Clamp(Pieces(function) * 32, 64, 8192);
+            var colours = new SKColor[samples];
+            var positions = new float[samples];
+            for (var i = 0; i < samples; i++)
+            {
+                positions[i] = i / (float)(samples - 1);
+                var values = Evaluate(function, domain[0] + (positions[i] * (domain[1] - domain[0])));
+                colours[i] = gray
+                    ? new SKColor(B(values[0]), B(values[0]), B(values[0]), B(alpha))
+                    : new SKColor(B(values[0]), B(values[1]), B(values[2]), B(alpha));
+            }
+
+            return type == 2
+                ? SKShader.CreateLinearGradient(new SKPoint(coords[0], coords[1]), new SKPoint(coords[2], coords[3]), colours, positions, SKShaderTileMode.Clamp, local)
+                : SKShader.CreateTwoPointConicalGradient(new SKPoint(coords[0], coords[1]), coords[2], new SKPoint(coords[3], coords[4]), coords[5], colours, positions, SKShaderTileMode.Clamp, local);
+        }
+
+        private int Pieces(Dictionary<string, object> function)
+        {
+            return (int)F(function["FunctionType"]) == 3
+                ? ((List<object>)function["Functions"]).Sum(f => Pieces(Dict(f)))
+                : 1;
+        }
+
+        /// <summary>
+        /// Evaluates an exponential (type 2) or stitching (type 3) function
+        /// </summary>
+        private float[] Evaluate(Dictionary<string, object> function, float t)
+        {
+            var domain = Floats(function["Domain"]);
+            t = Math.Clamp(t, domain[0], domain[1]);
+
+            if ((int)F(function["FunctionType"]) == 2)
+            {
+                var c0 = function.TryGetValue("C0", out var a) ? Floats(a) : new float[] { 0 };
+                var c1 = function.TryGetValue("C1", out var b) ? Floats(b) : new float[] { 1 };
+                var n = F(function["N"]);
+                var x = (float)Math.Pow((t - domain[0]) / Math.Max(1e-9f, domain[1] - domain[0]), n);
+                return c0.Select((v, i) => v + (x * (c1[i] - v))).ToArray();
+            }
+
+            var functions = (List<object>)function["Functions"];
+            var bounds = Floats(function["Bounds"]);
+            var encode = Floats(function["Encode"]);
+
+            var k = 0;
+            while (k < bounds.Length && t >= bounds[k]) k++;
+            var low = k == 0 ? domain[0] : bounds[k - 1];
+            var high = k == bounds.Length ? domain[1] : bounds[k];
+            var e0 = encode[2 * k];
+            var e1 = encode[(2 * k) + 1];
+            var mapped = high > low ? e0 + ((t - low) * (e1 - e0) / (high - low)) : e0;
+            return Evaluate(Dict(functions[k]), mapped);
+        }
+
+        #endregion
+
+        private void DrawXObject(Context context, string name, GraphicsState state)
+        {
+            var reference = (PdfReference)Resource(context, "XObject", name);
+            var xobject = _pdf.Objects[reference.Number];
+            var dictionary = (Dictionary<string, object>)PdfObjectParser.Parse(xobject.Dictionary);
+            if (((PdfName)dictionary["Subtype"]).Value != "Form") return; // images aren't compared
 
             var inner = state.Clone();
-            var matrix = Regex.Match(xobject.Dictionary, @"/Matrix \[([^\]]*)\]");
-            if (matrix.Success)
+            if (dictionary.TryGetValue("Matrix", out var m))
             {
-                var m = Array.ConvertAll(matrix.Groups[1].Value.Split(' ', StringSplitOptions.RemoveEmptyEntries), v => float.Parse(v, CultureInfo.InvariantCulture));
-                inner.Ctm = SKMatrix.Concat(inner.Ctm, new SKMatrix(m[0], m[2], m[4], m[1], m[3], m[5], 0, 0, 1));
+                var matrix = Floats(m);
+                inner.Ctm = SKMatrix.Concat(inner.Ctm, new SKMatrix(matrix[0], matrix[2], matrix[4], matrix[1], matrix[3], matrix[5], 0, 0, 1));
             }
 
             var content = Encoding.Latin1.GetString(xobject.Stream ?? new byte[0]);
+            var formContext = new Context { Resources = Dict(dictionary["Resources"]), FormBase = inner.Ctm };
 
             // a transparency group is drawn on its own and then blended using the current opacity
-            if (xobject.Dictionary.Contains("/Group") && (state.FillAlpha < 1))
+            if (dictionary.ContainsKey("Group") && (state.FillAlpha < 1))
             {
                 using var layer = new SKPaint { Color = SKColors.Black.WithAlpha(B(state.FillAlpha)) };
                 _canvas.SaveLayer(layer);
                 inner.FillAlpha = 1;
                 inner.StrokeAlpha = 1;
-                Render(content, xobject.Dictionary, inner);
+                Render(content, formContext, inner);
                 _canvas.Restore();
             }
             else
             {
-                Render(content, xobject.Dictionary, inner);
+                Render(content, formContext, inner);
             }
-        }
-
-        /// <summary>
-        /// Finds a named entry in a resource category, eg: /XObject &lt;&lt; /I1 5 0 R &gt;&gt;
-        /// </summary>
-        private string ResourceEntry(string resources, string category, string name)
-        {
-            var section = Regex.Match(resources, "/" + category + @"\s*<<((?:[^<>]|<<(?:[^<>]|<<[^<>]*>>)*>>)*)>>");
-            if (!section.Success)
-            {
-                // the resources dictionary may itself be an indirect object
-                var reference = Regex.Match(resources, @"/Resources (\d+ 0 R)");
-                if (reference.Success) return ResourceEntry(_pdf.Resolve(reference.Groups[1].Value).Dictionary, category, name);
-                throw new InvalidOperationException($"No {category} resources for {name}");
-            }
-
-            var entry = Regex.Match(section.Groups[1].Value, "/" + Regex.Escape(name) + @"\s*(<<(?:[^<>]|<<[^<>]*>>)*>>|\d+ 0 R)");
-            if (!entry.Success) throw new InvalidOperationException($"Resource {name} not found");
-            return entry.Groups[1].Value;
         }
 
         private static byte B(float value) => (byte)Math.Round(Math.Clamp(value, 0, 1) * 255);
@@ -293,13 +444,13 @@ namespace CorePDF.IntegrationTests.Svg
                         else if (content[i] == ')') depth--;
                         i++;
                     } while (depth > 0);
-                    token = "";
+                    token = 0.0;
                 }
                 else if (c == '<' && i + 1 < content.Length && content[i + 1] != '<')
                 {
                     while (content[i] != '>') i++;
                     i++;
-                    token = "";
+                    token = 0.0;
                 }
                 else if (c == '/')
                 {
