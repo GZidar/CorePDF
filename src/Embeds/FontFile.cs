@@ -1,10 +1,7 @@
-﻿using System.Runtime.Serialization;
-using System.Text.Json.Serialization;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
+using System.Text.Json.Serialization;
 
 namespace CorePDF.Embeds
 {
@@ -16,29 +13,36 @@ namespace CorePDF.Embeds
         CIDFontType2
     }
 
-    public class FontFile : PDFObject
+    /// <summary>
+    /// A TrueType font file to be embedded in the document. Only the name and the file (or its
+    /// contents) are needed: the font's metrics are read from the file itself, and only the
+    /// characters actually used are included in the published document.
+    /// </summary>
+    public class FontFile
     {
+        private const string METRICSOBSOLETE = "Font metrics are now read from the font file automatically, so this value is ignored.";
+
         /// <summary>
         /// The name used to reference this font in the document content
         /// </summary>
         public string Name { get; set; }
 
+        /// <summary>
+        /// The family name of the font. Fonts with the same BaseFont are treated as the bold
+        /// and italic variants of each other when using &lt;b&gt; and &lt;i&gt; tags in text.
+        /// Defaults to the Name if left blank.
+        /// </summary>
         public string BaseFont { get; set; }
-        public bool Italic { get; set; }
-        public bool Bold { get; set; }
-        public int BoundingBoxLeft { get; set; }
-        public int Flags { get; set; }
-        public int Ascent { get; set; }
-        public int CapHeight { get; set; }
-        public int Descent { get; set; }
-        public int AverageWidth { get; set; }
-        public int MaximumWidth { get; set; }
-        public int ItalicAngle { get; set; } = 0;
-        public int FontWeight { get; set; } = 400;
-        public int XHeight { get; set; }
-        public int StemV { get; set; }
 
-        public FontType Type { get; set; } = FontType.TrueType;
+        /// <summary>
+        /// True if this is the bold variant of the font family
+        /// </summary>
+        public bool Italic { get; set; }
+
+        /// <summary>
+        /// True if this is the italic variant of the font family
+        /// </summary>
+        public bool Bold { get; set; }
 
         /// <summary>
         /// A fully qualified path to the font file
@@ -46,98 +50,58 @@ namespace CorePDF.Embeds
         public string FilePath { get; set; }
 
         /// <summary>
-        /// The raw contents of the font file
+        /// The raw contents of the font file. Used instead of FilePath if set.
         /// </summary>
         public byte[] FileData { get; set; }
 
-        /// <summary>
-        /// This will be calculated as the document is published
-        /// </summary>
-        [JsonIgnore, IgnoreDataMember]
-        public long FileBytePosition { get; set; }
-
-        /// <summary>
-        /// The size of each character relative to one another
-        /// </summary>
+        [Obsolete(METRICSOBSOLETE), JsonIgnore]
+        public int BoundingBoxLeft { get; set; }
+        [Obsolete(METRICSOBSOLETE), JsonIgnore]
+        public int Flags { get; set; }
+        [Obsolete(METRICSOBSOLETE), JsonIgnore]
+        public int Ascent { get; set; }
+        [Obsolete(METRICSOBSOLETE), JsonIgnore]
+        public int CapHeight { get; set; }
+        [Obsolete(METRICSOBSOLETE), JsonIgnore]
+        public int Descent { get; set; }
+        [Obsolete(METRICSOBSOLETE), JsonIgnore]
+        public int AverageWidth { get; set; }
+        [Obsolete(METRICSOBSOLETE), JsonIgnore]
+        public int MaximumWidth { get; set; }
+        [Obsolete(METRICSOBSOLETE), JsonIgnore]
+        public int ItalicAngle { get; set; }
+        [Obsolete(METRICSOBSOLETE), JsonIgnore]
+        public int FontWeight { get; set; }
+        [Obsolete(METRICSOBSOLETE), JsonIgnore]
+        public int XHeight { get; set; }
+        [Obsolete(METRICSOBSOLETE), JsonIgnore]
+        public int StemV { get; set; }
+        [Obsolete(METRICSOBSOLETE), JsonIgnore]
         public List<int> Widths { get; set; }
+        [Obsolete("Embedded fonts are always written as Type0 fonts, so this value is ignored."), JsonIgnore]
+        public FontType Type { get; set; } = FontType.TrueType;
 
-        protected Stream Open()
+        /// <summary>
+        /// Reads the contents of the font file
+        /// </summary>
+        internal byte[] ReadData()
         {
-            if (FileData == null)
+            if (FileData != null)
             {
-                return new FileStream(FilePath, FileMode.Open, FileAccess.Read);
+                return FileData;
             }
 
-            return new MemoryStream(FileData);
-        }
-
-        public void EmbedFile()
-        {
-            using (new InvariantCultureScope())
+            if (string.IsNullOrEmpty(FilePath))
             {
-                EmbedFileCore();
+                throw new InvalidOperationException($"The font '{Name}' has neither a FilePath nor FileData.");
             }
-        }
 
-        private void EmbedFileCore()
-        {
-            // do nothing if there is no valid file or file data specified
-            if (FileData == null && (string.IsNullOrEmpty(FilePath) || !File.Exists(FilePath))) return;
-
-            // attempt to load the font file to get the metrics information from it
-            using (var fileStream = Open())
+            if (!File.Exists(FilePath))
             {
-                var memStream = new MemoryStream();
-                fileStream.CopyTo(memStream);
-
-                _encodedData = memStream.ToArray();
+                throw new FileNotFoundException($"The font file for '{Name}' could not be found.", FilePath);
             }
-        }
 
-        public override void Publish(StreamWriter stream)
-        {
-
-            var PDFData = new Dictionary<string, dynamic>
-            {
-                { "/Type", "/FontDescriptor" },
-                { "/FontName", "/" + Name },
-                { "/Flags", Flags},
-                { "/ItalicAngle", ItalicAngle},
-                { "/Ascent", Ascent},
-                { "/Descent", Descent },
-                { "/CapHeight", CapHeight },
-                { "/FontWeight", FontWeight },
-                { "/MaxWidth", MaximumWidth },
-                { "/AvgWidth", AverageWidth },
-                { "/StemV", StemV},
-                { "/FontBBox", string.Format("[ {0} {1} {2} {3} ]", BoundingBoxLeft, Descent, MaximumWidth + (BoundingBoxLeft), CapHeight)},
-                { "/FontFile2", string.Format("{0} 0 R", ObjectNumber + 1)}
-            };
-
-            _pdfObject = PDFData;
-
-            var encodedData = _encodedData;
-            var compressed = _compressed;
-
-            // clear out the data and compressed values for the Font Descriptor
-            _compressed = false;
-            _encodedData = null;
-            base.Publish(stream);
-
-            var bytePosition = BytePosition;
-
-            // restore those values to publish the actual font data
-            _encodedData = encodedData;
-            _compressed = compressed;
-            _pdfObject = new Dictionary<string, dynamic>();
-            ObjectNumber += 1;
-            base.Publish(stream);
-
-            // Save the byte position of the file and restore the previous values
-            // for the font descriptor
-            FileBytePosition = BytePosition;
-            BytePosition = bytePosition;
-            ObjectNumber -= 1;
+            return File.ReadAllBytes(FilePath);
         }
     }
 

@@ -1,4 +1,4 @@
-﻿using CorePDF.Contents;
+using CorePDF.Contents;
 using CorePDF.TypeFaces;
 using System.Collections.Generic;
 using System.IO;
@@ -48,64 +48,78 @@ namespace CorePDF.Pages
             }
         }
 
-        public void Publish(List<Font> documentFonts, StreamWriter stream)
+        /// <summary>
+        /// The clickable links on the page (including any in its header or footer). This is
+        /// set by the document once the page content has been prepared.
+        /// </summary>
+        internal List<LinkArea> Links { get; set; } = new List<LinkArea>();
+
+        /// <summary>
+        /// The object number of the first link annotation; the rest follow on consecutively.
+        /// </summary>
+        internal int FirstAnnotationNumber { get; set; }
+
+        /// <summary>
+        /// Gathers the links from the page's header, footer and content
+        /// </summary>
+        internal void CollectLinks()
         {
-            var fonts = new Dictionary<string, string>();
-            foreach (var font in documentFonts)
+            Links = new List<LinkArea>();
+            foreach (var content in AllContents())
             {
-                fonts.Add("/" + font.Id, string.Format("{0} 0 R", font.ObjectNumber));
+                Links.AddRange(content.GetLinks());
             }
+        }
 
-            // content can be found on the page and in any associated header or footer
-            var contentRefs = "[ ";
-            var xobjects = new Dictionary<string, string>();
+        /// <summary>
+        /// The content of the page's header and footer followed by the page's own content,
+        /// in the order it is drawn
+        /// </summary>
+        private IEnumerable<Content> AllContents()
+        {
             var header = PageRoot.Document.GetHeaderFooter(HeaderName);
-
             if (header != null)
             {
-                foreach (var content in header.Contents)
-                {
-                    contentRefs += string.Format("{0} 0 R ", content.ObjectNumber);
-
-                    if (content is Image)
-                    {
-                        var imageFile = PageRoot.Document.GetImage(((Image)content).ImageName);
-                        if (imageFile != null)
-                        {
-                            xobjects.Add("/" + imageFile.Id, string.Format("{0} 0 R", imageFile.ObjectNumber));
-                        }
-                    }
-                }
+                foreach (var content in header.Contents) yield return content;
             }
 
             var footer = PageRoot.Document.GetHeaderFooter(FooterName);
             if (footer != null)
             {
-                foreach (var content in footer.Contents)
-                {
-                    contentRefs += string.Format("{0} 0 R ", content.ObjectNumber);
+                foreach (var content in footer.Contents) yield return content;
+            }
 
-                    if (content is Image)
-                    {
-                        var imageFile = PageRoot.Document.GetImage(((Image)content).ImageName);
-                        if (imageFile != null)
-                        {
-                            xobjects.Add("/" + imageFile.Id, string.Format("{0} 0 R", imageFile.ObjectNumber));
-                        }
-                    }
+            foreach (var content in Contents) yield return content;
+        }
+
+        public void Publish(List<Font> documentFonts, StreamWriter stream)
+        {
+            // only the fonts that are used are included in the document
+            var fonts = new Dictionary<string, string>();
+            foreach (var font in documentFonts)
+            {
+                if (font.Used)
+                {
+                    fonts["/" + font.Id] = string.Format("{0} 0 R", font.ObjectNumber);
                 }
             }
 
-            foreach (var content in Contents)
+            // content can be found on the page and in any associated header or footer
+            var contentRefs = "[ ";
+            var xobjects = new Dictionary<string, string>();
+
+            foreach (var content in AllContents())
             {
+                if (!content.HasStream) continue; // nothing to draw (eg: an empty text box)
+
                 contentRefs += string.Format("{0} 0 R ", content.ObjectNumber);
 
                 if (content is Image)
                 {
                     var imageFile = PageRoot.Document.GetImage(((Image)content).ImageName);
-                    if (imageFile != null)
+                    if (imageFile != null && imageFile.IsPublished)
                     {
-                        xobjects.Add("/" + imageFile.Id, string.Format("{0} 0 R", imageFile.ObjectNumber));
+                        xobjects["/" + imageFile.Id] = string.Format("{0} 0 R", imageFile.ObjectNumber);
                     }
                 }
             }
@@ -130,6 +144,16 @@ namespace CorePDF.Pages
                 { "/Resources", resources },
                 { "/Contents", contentRefs}
             };
+
+            if (Links.Count > 0)
+            {
+                var annots = "[";
+                for (var i = 0; i < Links.Count; i++)
+                {
+                    annots += string.Format(" {0} 0 R", FirstAnnotationNumber + i);
+                }
+                _pdfObject.Add("/Annots", annots + " ]");
+            }
 
             base.Publish(stream);
         }

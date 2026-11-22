@@ -2,7 +2,7 @@
 using CorePDF.TypeFaces;
 using System;
 using System.Collections.Generic;
-using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace CorePDF.Contents
@@ -13,12 +13,14 @@ namespace CorePDF.Contents
     public class TextBox : Content
     {
         /// <summary>
-        /// The text to be added to the document
+        /// The text to be added to the document. Line breaks start a new line and the
+        /// &lt;b&gt; and &lt;i&gt; tags can be used to show text in bold or italics (provided
+        /// the bold and italic versions of the font are available).
         /// </summary>
         public string Text { get; set; }
 
         /// <summary>
-        /// Determines if the text is aligned to the left, right, or centre of the 
+        /// Determines if the text is aligned to the left, right, or centre of the
         /// text box
         /// </summary>
         public Alignment TextAlignment { get; set; }
@@ -26,7 +28,7 @@ namespace CorePDF.Contents
         /// <summary>
         /// Controls how the PosX and PosY co-ordinates are used to position the
         /// content. If set to "Bottom" then the PosX and PosY will indicate the
-        /// position of the bottom line of the text block. If set to "Top" then 
+        /// position of the bottom line of the text block. If set to "Top" then
         /// PosX and PosY will indicate the position of the top line of the text block.
         /// </summary>
         public PositionAnchor Position { get; set; } = PositionAnchor.Top;
@@ -62,14 +64,23 @@ namespace CorePDF.Contents
         private int _lineHeight;
 
         /// <summary>
-        /// Specifies the color of the text. This is specified using HTML hexadecimal 
-        /// color syntax and must be 6 characters long. eg:<br /> 
+        /// Specifies the color of the text. This is specified using HTML hexadecimal
+        /// color syntax and must be 6 characters long. eg:<br />
         ///     #ffffff = white, <br />
         ///     #ff0000 is red, <br />
         ///     #000000 = black.<br />
         /// Will default to black if left blank.
         /// </summary>
         public string Color { get; set; }
+
+        /// <summary>
+        /// A run of text in a single style
+        /// </summary>
+        private class TextRun
+        {
+            public string Text;
+            public Font Font;
+        }
 
         public override void PrepareStream(PageRoot pageRoot, Size pageSize, List<Font> fonts, bool compress)
         {
@@ -81,15 +92,17 @@ namespace CorePDF.Contents
                 throw new ArgumentOutOfRangeException("PosY", "TextBox vertical position (PosY) is outside the bounds of the page.");
             }
 
-            var result = "";
             var contentFont = fonts.Find(f => f.FontName == FontFace);
+            if (contentFont == null)
+            {
+                throw new ArgumentException($"The font '{FontFace}' is not available. Use one of the standard fonts or embed it using Document.EmbedFont.", nameof(FontFace));
+            }
 
-            var textHeight = Height;
             var textWidth = Width;
             if (textWidth == 0)
             {
                 // the text hasn't been constrained to a specific width so calculate that constraint
-                // based on alignment and position. 
+                // based on alignment and position.
                 switch (TextAlignment)
                 {
                     case Alignment.Center:
@@ -114,164 +127,54 @@ namespace CorePDF.Contents
                 throw new ArgumentOutOfRangeException("PosX", "TextBox horizontal position (PosX) is outside the bounds of the page.");
             }
 
-            // now split the strings at their line breaks and process each paragraph so that it fits within the width
-            var textLines = Text.Split('\n');
-            var adjustedText = "";
-            var calcHeight = 0;
-            var isbold = false;
-            var isitalic = false;
-            for (var l = 0; l < textLines.Length; l++)
+            var lines = Layout(contentFont, fonts, textWidth);
+
+            if (Height > 0 && LineHeight > 0)
             {
-                // split each line into words
-                var lineWords = textLines[l].Split(' ');
-                var width = 0;
-                for (var num = 0; num < lineWords.Length; num++)
+                // only show the lines that start within the height of the box
+                var maxLines = (int)Math.Ceiling(Height / (decimal)LineHeight);
+                if (lines.Count > maxLines)
                 {
-                    if (num + 1 < lineWords.Length)
-                    {
-                        lineWords[num] += " ";
-                    }
-
-                    var style = "";
-                    var word = lineWords[num].ToLower();
-                    if (word.Contains("<b>"))
-                    {
-                        isbold = true;
-                        if (isitalic)
-                        {
-                            style = "{{BI}}";
-                        }
-                        else
-                        {
-                            style = "{{B}}";
-                        }
-                    }
-                    if (word.Contains("<i>"))
-                    {
-                        isitalic = true;
-                        if (isbold)
-                        {
-                            style = "{{BI}}";
-                        }
-                        else
-                        {
-                            style = "{{I}}";
-                        }
-                    }
-
-                    var pureWord = lineWords[num].Replace("<b>", "");
-                    pureWord = pureWord.Replace("<B>", "");
-                    pureWord = pureWord.Replace("<i>", "");
-                    pureWord = pureWord.Replace("<I>", "");
-                    pureWord = pureWord.Replace("</b>", "");
-                    pureWord = pureWord.Replace("</B>", "");
-                    pureWord = pureWord.Replace("</i>", "");
-                    pureWord = pureWord.Replace("</I>", "");
-
-
-                    // if the word was only the bold or italic tag then loop to the next word
-                    if (!string.IsNullOrEmpty(lineWords[num]))
-                    {
-                        // determine the font that should be used to calculate the width
-                        var font = fonts.Find(f => f.BaseFont == contentFont.BaseFont && f.Bold == isbold && f.Italic == isitalic);
-
-                        var wordWidth = StringLength(pureWord, FontSize, font);
-                        if (width + wordWidth > textWidth)
-                        {
-                            // this word will take us over the edge so get rid of the trailing space and add a linebreak
-                            adjustedText = adjustedText.Substring(0, adjustedText.Length - 1);
-                            adjustedText += "\n";
-                            calcHeight += LineHeight;
-                            width = 0;
-                        }
-
-                        if (textHeight == 0 || calcHeight < textHeight)
-                        {
-                            // this text is still within the box height it's ok to keep adding words
-                            adjustedText += (style + pureWord);
-                            style = "";
-                            width += wordWidth;
-                        }
-                    }
-
-                    if (word.Contains("</b>"))
-                    {
-                        if (isitalic)
-                        {
-                            style = "{{/BI}}{{I}}";
-                        }
-                        else
-                        {
-                            style = "{{/B}}";
-                        }
-                        isbold = false;
-                    }
-                    if (word.Contains("</i>"))
-                    {
-                        if (isbold)
-                        {
-                            style = "{{/BI}}{{B}}";
-                        }
-                        else
-                        {
-                            style = "{{/I}}";
-                        }
-                        isitalic = false;
-                    }
-
-                    if (!string.IsNullOrEmpty(style))
-                    {
-                        adjustedText += style;
-                    }
+                    lines.RemoveRange(maxLines, lines.Count - maxLines);
                 }
-
-                if (l + 1 < textLines.Length)
-                {
-                    // Add the newline character back since this is where it used to be
-                    adjustedText += "\n";
-                }
-                calcHeight += LineHeight;
             }
 
-            result = "BT\n";
-            result += string.Format("/{0} {1} Tf\n", contentFont.Id, FontSize);
+            var calcHeight = lines.Count * LineHeight;
 
-            result += string.Format("{0} TL\n", LineHeight);
+            var result = new StringBuilder();
+            result.Append("BT\n");
+            result.AppendFormat("/{0} {1} Tf\n", contentFont.Id, FontSize);
+            result.AppendFormat("{0} TL\n", LineHeight);
 
             if (!string.IsNullOrEmpty(Color))
             {
-                result += string.Format("{0} rg\n", ToPDFColor(Color));
+                result.AppendFormat("{0} rg\n", ToPDFColor(Color));
             }
             else
             {
-                result += "0 0 0 rg\n";
+                result.Append("0 0 0 rg\n");
             }
 
-            textLines = adjustedText.Split('\n');
-            var count = 0;
-            var curX = PosX;
             var curY = PosY;
-
             if (Position == PositionAnchor.Bottom)
             {
                 // if the string was split across multiple lines then the Y position needs adjusting
-                curY += (calcHeight - LineHeight); 
+                curY += (calcHeight - LineHeight);
             }
+            var topBaseline = curY;
 
+            var count = 0;
             var stringLength = 0;
-            foreach (var line in textLines)
+            var currentFont = contentFont;
+            var lineStart = 0;
+            var minX = int.MaxValue;
+            var maxX = int.MinValue;
+
+            foreach (var line in lines)
             {
                 var prevLength = stringLength;
-
-                var pureLine = line.Replace("{{B}}", "");
-                pureLine = pureLine.Replace("{{I}}", "");
-                pureLine = pureLine.Replace("{{BI}}", "");
-                pureLine = pureLine.Replace("{{/B}}", "");
-                pureLine = pureLine.Replace("{{/I}}", "");
-                pureLine = pureLine.Replace("{{/BI}}", "");
-
-                // TODO: apply the formatting to properly determine the length of the line.
-                stringLength = StringLength(pureLine, FontSize, contentFont);
+                stringLength = LineLength(line);
+                var curX = PosX;
 
                 count++;
                 if (count > 1)
@@ -279,61 +182,42 @@ namespace CorePDF.Contents
                     curY = 0 - LineHeight;
                 }
 
+                // text positions (Td) are relative to the start of the previous line
                 switch (TextAlignment)
                 {
                     case Alignment.Center:
-                        if (count == 1)
-                        {
-                            curX = PosX - (stringLength / 2);
-                        }
-                        else
-                        {
-                            curX = (prevLength - stringLength) / 2;
-                        }
-
+                        curX = count == 1 ? PosX - (stringLength / 2) : (prevLength - stringLength) / 2;
                         break;
                     case Alignment.Right:
-                        if (count == 1)
-                        {
-                            curX = (PosX - stringLength);
-                        }
-                        else
-                        {
-                            curX = (prevLength - stringLength);
-                        }
-
+                        curX = count == 1 ? PosX - stringLength : prevLength - stringLength;
                         break;
                     case Alignment.Left:
                         if (count > 1)
                         {
                             curX = 0;
                         }
-
                         break;
                 }
 
-                result += string.Format("{0} {1} Td\n", curX, curY);
+                result.AppendFormat("{0} {1} Td\n", curX, curY);
 
-                // now we are ready to output the line we need to replace the PDF special characters with the their escaped equivalents
-                //'(', '/' and ')' are escape characters in adobe so remove them - page 30 of adobe doco. 
+                lineStart = count == 1 ? curX : lineStart + curX;
+                minX = Math.Min(minX, lineStart);
+                maxX = Math.Max(maxX, lineStart + stringLength);
 
-                var output = line.Replace("\\", "\\\\");
-                output = output.Replace("(", "\\(");
-                output = output.Replace(")", "\\)");
+                foreach (var run in line)
+                {
+                    if (run.Font != currentFont)
+                    {
+                        result.AppendFormat("/{0} {1} Tf\n", run.Font.Id, FontSize);
+                        currentFont = run.Font;
+                    }
 
-                // also need to replace any {{bold/italic}} tags with their PDF equivalents
-
-                output = output.Replace("{{B}}", string.Format(") Tj\n/{0} {1} Tf\n(", fonts.Find(f => f.BaseFont == contentFont.BaseFont && f.Bold && !f.Italic)?.Id ?? contentFont.Id, FontSize));
-                output = output.Replace("{{I}}", string.Format(") Tj\n/{0} {1} Tf\n(", fonts.Find(f => f.BaseFont == contentFont.BaseFont && !f.Bold && f.Italic)?.Id ?? contentFont.Id, FontSize));
-                output = output.Replace("{{BI}}", string.Format(") Tj\n/{0} {1} Tf\n(", fonts.Find(f => f.BaseFont == contentFont.BaseFont && f.Bold && f.Italic)?.Id ?? contentFont.Id, FontSize));
-                output = output.Replace("{{/B}}", string.Format(") Tj\n/{0} {1} Tf\n(", contentFont.Id, FontSize));
-                output = output.Replace("{{/I}}", string.Format(") Tj\n/{0} {1} Tf\n(", contentFont.Id, FontSize));
-                output = output.Replace("{{/BI}}", string.Format(") Tj\n/{0} {1} Tf\n(", contentFont.Id, FontSize));
-
-                result += string.Format("({0}) Tj\n", output);
+                    result.AppendFormat("{0} Tj\n", run.Font.EncodeText(run.Text));
+                }
             }
 
-            result += "ET";
+            result.Append("ET");
 
             if (Height == 0)
             {
@@ -341,7 +225,14 @@ namespace CorePDF.Contents
                 Height = calcHeight;
             }
 
-            _encodedData = Encoding.UTF8.GetBytes(result);
+            if (lines.Count > 0)
+            {
+                // the clickable area allows for the ascenders and descenders of the text
+                var bottomBaseline = topBaseline - ((lines.Count - 1) * LineHeight);
+                SetLinkBounds(minX, bottomBaseline - (FontSize * 0.25m), maxX, topBaseline + FontSize);
+            }
+
+            _encodedData = Encoding.UTF8.GetBytes(result.ToString());
 
             base.PrepareStream(compress);
         }
@@ -355,13 +246,170 @@ namespace CorePDF.Contents
         /// <returns></returns>
         protected int StringLength(string text, int fontSize, Font font)
         {
-            char[] cArray = text.ToCharArray();
-            int width = 0;
-            foreach (char c in cArray)
+            return font.MeasureText(text) * fontSize / 1000;
+        }
+
+        private int LineLength(List<TextRun> line)
+        {
+            // the runs share a font size so total their widths before scaling to points
+            return line.Sum(r => r.Font.MeasureText(r.Text)) * FontSize / 1000;
+        }
+
+        /// <summary>
+        /// Splits the text into lines that fit within the width, with each line made up of
+        /// runs of text that share the same font.
+        /// </summary>
+        private List<List<TextRun>> Layout(Font contentFont, List<Font> fonts, int textWidth)
+        {
+            var result = new List<List<TextRun>>();
+
+            var text = Text.Replace("\r\n", "\n").Replace('\r', '\n').Replace('\t', ' ');
+            var bold = false;
+            var italic = false;
+
+            Font FontFor(bool b, bool i)
             {
-                width += font.Metrics[c];
+                // a bold or italic font face stays bold or italic regardless of the tags
+                b |= contentFont.Bold;
+                i |= contentFont.Italic;
+                if (b == contentFont.Bold && i == contentFont.Italic) return contentFont;
+
+                return fonts.Find(f => f.BaseFont == contentFont.BaseFont && f.Bold == b && f.Italic == i) ?? contentFont;
             }
-            return (width * fontSize / 1000);
+
+            foreach (var paragraph in text.Split('\n'))
+            {
+                // break the paragraph into words (made up of one or more runs) and the spaces between them
+                var words = new List<(List<TextRun> Spaces, List<TextRun> Word)>();
+                var spaces = new List<TextRun>();
+                var word = new List<TextRun>();
+                var buffer = new StringBuilder();
+
+                void Flush()
+                {
+                    if (buffer.Length > 0)
+                    {
+                        word.Add(new TextRun { Text = buffer.ToString(), Font = FontFor(bold, italic) });
+                        buffer.Clear();
+                    }
+                }
+
+                void EndWord()
+                {
+                    Flush();
+                    if (word.Count > 0)
+                    {
+                        words.Add((spaces, word));
+                        spaces = new List<TextRun>();
+                        word = new List<TextRun>();
+                    }
+                }
+
+                var pos = 0;
+                while (pos < paragraph.Length)
+                {
+                    var tag = MatchTag(paragraph, pos);
+                    if (tag != null)
+                    {
+                        Flush();
+                        if (tag[1] == '/')
+                        {
+                            if (char.ToLowerInvariant(tag[2]) == 'b') bold = false; else italic = false;
+                        }
+                        else
+                        {
+                            if (char.ToLowerInvariant(tag[1]) == 'b') bold = true; else italic = true;
+                        }
+                        pos += tag.Length;
+                        continue;
+                    }
+
+                    var c = paragraph[pos];
+                    if (c == ' ')
+                    {
+                        EndWord();
+                        spaces.Add(new TextRun { Text = " ", Font = FontFor(bold, italic) });
+                    }
+                    else
+                    {
+                        buffer.Append(c);
+                    }
+                    pos++;
+                }
+                EndWord();
+
+                // now fill the lines with as many words as will fit
+                var line = new List<TextRun>();
+                var lineWidth = 0m;
+                foreach (var (wordSpaces, wordRuns) in words)
+                {
+                    var spaceWidth = Measure(wordSpaces);
+                    var wordWidth = Measure(wordRuns);
+
+                    if (line.Count > 0 && lineWidth + spaceWidth + wordWidth > textWidth)
+                    {
+                        // this word would go over the edge so start a new line (the spaces are dropped)
+                        result.Add(Merge(line));
+                        line = new List<TextRun>();
+                        lineWidth = 0;
+                    }
+                    else
+                    {
+                        line.AddRange(wordSpaces);
+                        lineWidth += spaceWidth;
+                    }
+
+                    line.AddRange(wordRuns);
+                    lineWidth += wordWidth;
+                }
+
+                // keep any trailing spaces at the end of the paragraph
+                line.AddRange(spaces);
+                result.Add(Merge(line));
+            }
+
+            return result;
+        }
+
+        private decimal Measure(List<TextRun> runs)
+        {
+            return runs.Sum(r => r.Font.MeasureText(r.Text)) * FontSize / 1000m;
+        }
+
+        /// <summary>
+        /// Joins neighbouring runs that use the same font
+        /// </summary>
+        private static List<TextRun> Merge(List<TextRun> runs)
+        {
+            var result = new List<TextRun>();
+            foreach (var run in runs)
+            {
+                if (result.Count > 0 && result[result.Count - 1].Font == run.Font)
+                {
+                    result[result.Count - 1].Text += run.Text;
+                }
+                else
+                {
+                    result.Add(new TextRun { Text = run.Text, Font = run.Font });
+                }
+            }
+            return result;
+        }
+
+        private static readonly string[] _tags = { "<b>", "</b>", "<i>", "</i>" };
+
+        private static string MatchTag(string text, int pos)
+        {
+            if (text[pos] != '<') return null;
+
+            foreach (var tag in _tags)
+            {
+                if (string.Compare(text, pos, tag, 0, tag.Length, StringComparison.OrdinalIgnoreCase) == 0)
+                {
+                    return text.Substring(pos, tag.Length);
+                }
+            }
+            return null;
         }
     }
 }

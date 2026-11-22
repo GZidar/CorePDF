@@ -166,6 +166,102 @@ namespace CorePDF.UnitTests
             Assert.Contains(lines, l => l.Contains(textDef));
         }
 
+        private string Prepare(TextBox textBox)
+        {
+            textBox.PrepareStream(_pageRoot.Object, _pageSize, _fonts, false);
+            return textBox.GetEncodedString();
+        }
 
+        private string FontId(string name) => _fonts.Find(f => f.FontName == name).Id;
+
+        [Fact]
+        public void RightAligned_MixedStyles_MeasuredWithTheStyledFont()
+        {
+            // "m" is 833 wide in Helvetica but 889 in Helvetica-Bold, so 4 bold m's at 10pt = 35pt
+            var stream = Prepare(new TextBox { Text = "<b>mmmm</b>", PosX = 200, PosY = 200, TextAlignment = Alignment.Right });
+
+            Assert.Contains("165 200 Td", stream);
+            Assert.Contains(string.Format("/{0} 10 Tf\n(mmmm) Tj", FontId(Fonts.FONTSANSSERIFBOLD)), stream);
+        }
+
+        [Fact]
+        public void StyleTags_SwitchFontsAndBack()
+        {
+            var stream = Prepare(new TextBox { Text = "a <B>b</B> <i>c <b>d</b></i> e", PosX = 10, PosY = 200 });
+
+            var expected = string.Join("\n",
+                "(a ) Tj",
+                $"/{FontId(Fonts.FONTSANSSERIFBOLD)} 10 Tf", "(b) Tj",
+                $"/{FontId(Fonts.FONTSANSSERIF)} 10 Tf", "( ) Tj",
+                $"/{FontId(Fonts.FONTSANSSERIFITALIC)} 10 Tf", "(c ) Tj",
+                $"/{FontId(Fonts.FONTSANSSERIFBOLDITALIC)} 10 Tf", "(d) Tj",
+                $"/{FontId(Fonts.FONTSANSSERIF)} 10 Tf", "( e) Tj");
+            Assert.Contains(expected, stream);
+        }
+
+        [Fact]
+        public void Wrapping_AfterAStyleTag_KeepsTheTextIntact()
+        {
+            var stream = Prepare(new TextBox { Text = "<b>bold</b> words that wrap", PosX = 10, PosY = 200, Width = 40 });
+
+            Assert.DoesNotContain("{", stream);
+            Assert.Contains("(bold) Tj", stream);
+            Assert.Contains("(words) Tj", stream);
+            Assert.Contains("(that) Tj", stream);
+            Assert.Contains("(wrap) Tj", stream);
+        }
+
+        [Fact]
+        public void WindowsLineEndingsAndTabs_AreNormalised()
+        {
+            var textBox = new TextBox { Text = "one\r\ntwo\tthree", PosX = 10, PosY = 200 };
+            var stream = Prepare(textBox);
+
+            Assert.Contains("(one) Tj", stream);
+            Assert.Contains("(two three) Tj", stream);
+            Assert.DoesNotContain("\r", stream);
+            Assert.Equal(20, textBox.Height);
+        }
+
+        [Fact]
+        public void Height_LimitsTheNumberOfLines()
+        {
+            var stream = Prepare(new TextBox { Text = "one\ntwo\nthree", PosX = 10, PosY = 200, Height = 15 });
+
+            Assert.Contains("(one) Tj", stream);
+            Assert.Contains("(two) Tj", stream);
+            Assert.DoesNotContain("three", stream);
+        }
+
+        [Fact]
+        public void UnknownFont_ThrowsHelpfulError()
+        {
+            var ex = Assert.Throws<ArgumentException>(() => Prepare(new TextBox { Text = "x", FontFace = "Comic Sans", PosX = 10, PosY = 200 }));
+
+            Assert.Contains("Comic Sans", ex.Message);
+        }
+
+        [Fact]
+        public void Hyperlink_CoversTheLaidOutText()
+        {
+            var textBox = new TextBox { Text = "Hello\nWorld!", PosX = 100, PosY = 300, FontSize = 10, Hyperlink = "https://example.com" };
+            Prepare(textBox);
+
+            var link = Assert.Single(textBox.GetLinks());
+            Assert.Equal("https://example.com", link.Uri);
+            Assert.Equal(100, link.Left);
+            Assert.Equal(100 + (_fonts[0].MeasureText("World!") * 10 / 1000), link.Right);
+            Assert.Equal(310, link.Top); // top line baseline plus the font size
+            Assert.Equal(287.5m, link.Bottom); // second line baseline less the descender allowance
+        }
+
+        [Fact]
+        public void NoHyperlink_HasNoLinks()
+        {
+            var textBox = new TextBox { Text = "Hello", PosX = 100, PosY = 300 };
+            Prepare(textBox);
+
+            Assert.Empty(textBox.GetLinks());
+        }
     }
 }

@@ -110,16 +110,7 @@ namespace CorePDF.IntegrationTests
             {
                 Name = "GreatVibes-Regular",
                 BaseFont = "GreatVibes",
-                FilePath = "GreatVibes-Regular.ttf",
-                MaximumWidth = 2031,
-                AverageWidth = 286,
-                Descent = -400,
-                StemV = 28,
-                Ascent = 851,
-                CapHeight = 850,
-                BoundingBoxLeft = -402,
-                ItalicAngle = -12,
-                Widths = Enumerable.Repeat(0, 32).Concat(Enumerable.Range(0, 96).Select(i => 200 + i * 7)).ToList()
+                FilePath = "GreatVibes-Regular.ttf"
             });
 
             document.Images = new List<ImageFile>

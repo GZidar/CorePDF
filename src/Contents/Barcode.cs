@@ -1,4 +1,4 @@
-﻿using CorePDF.Pages;
+using CorePDF.Pages;
 using CorePDF.TypeFaces;
 using System;
 using System.Collections.Generic;
@@ -59,9 +59,25 @@ namespace CorePDF.Contents
             }
 
             decimal curX = PosX;
-            // Add the start/stop characters
+            // Add the start/stop characters (and anything else the barcode type needs, eg: a check digit)
             var content = contentFont.PreProcessor(Text);
-            //var content = string.Format("{0}{1}{2}", contentFont.StartCharacter, Text, contentFont.StopCharacter);
+
+            // only printable characters can be encoded (the barcode fonts use other characters
+            // internally for the start, stop and special codes)
+            foreach (var c in Text)
+            {
+                if (c < 0x20 || c > 0x7E)
+                {
+                    throw new ArgumentException($"The character '{c}' can't be encoded in a {contentFont.FontName} barcode.", nameof(Text));
+                }
+            }
+            foreach (var c in content)
+            {
+                if (contentFont.CharacterSet.IndexOf(c) < 0)
+                {
+                    throw new ArgumentException($"The character '{c}' can't be encoded in a {contentFont.FontName} barcode.", nameof(Text));
+                }
+            }
             var stringLength = StringLength(content, FontSize, contentFont);
 
             switch (TextAlignment)
@@ -90,6 +106,7 @@ namespace CorePDF.Contents
             // reset the dash pattern
             result += "[] 0 d\n";
 
+            var barStart = curX;
             var textAreaStart = 0m;
             var textAreaWidth = 0m;
             var count = 0;
@@ -149,6 +166,8 @@ namespace CorePDF.Contents
 
             result += "S";
 
+            SetLinkBounds(barStart, PosY, curX, PosY + LineHeight);
+
             if (ShowText)
             {
                 if (textAreaStart == 0)
@@ -160,6 +179,10 @@ namespace CorePDF.Contents
                 }
 
                 var textFont = fonts.Find(f => f.FontName == TextFont);
+                if (textFont == null)
+                {
+                    throw new ArgumentException($"The font '{TextFont}' is not available. Use one of the standard fonts or embed it using Document.EmbedFont.", nameof(TextFont));
+                }
                 stringLength = base.StringLength(Text, FontSize, textFont);
                 curX = textAreaStart + ((textAreaWidth - stringLength) / 2);
 
@@ -177,7 +200,7 @@ namespace CorePDF.Contents
 
                 result += string.Format("{0} TL\n", FontSize);
                 result += string.Format("{0} {1} Td\n", curX, PosY);
-                result += string.Format("({0}) Tj\n", Text);
+                result += string.Format("{0} Tj\n", textFont.EncodeText(Text));
                 result += "ET";
             }
 
@@ -195,7 +218,7 @@ namespace CorePDF.Contents
         /// <returns></returns>
         protected int StringLength(string text, int fontSize, TypeFaces.Barcode font)
         {
-            char[] cArray = text.ToUpper().ToCharArray();
+            char[] cArray = text.ToCharArray();
             int width = 0;
             foreach (char c in cArray)
             {

@@ -1,4 +1,4 @@
-﻿using ICSharpCode.SharpZipLib.Zip.Compression.Streams;
+﻿using CorePDF.Writing;
 using System.Runtime.Serialization;
 using System.Text.Json.Serialization;
 using System;
@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.IO;
+using System.IO.Compression;
 using System.Text;
 
 namespace CorePDF
@@ -50,6 +51,11 @@ namespace CorePDF
         /// </summary>
         public string Comment { get; set; }
 
+        /// <summary>
+        /// True if the object has stream data
+        /// </summary>
+        internal bool HasStream => _encodedData != null && _encodedData.Length > 0;
+
         public virtual string GetEncodedString()
         {
             return Encoding.UTF8.GetString(_encodedData);
@@ -57,20 +63,21 @@ namespace CorePDF
 
         public virtual void PrepareStream(bool compress = false)
         {
-            if (compress)
-            {
-                using (var orgStream = new MemoryStream(_encodedData))
-                {
-                    using (var cmpStream = new MemoryStream())
-                    {
-                        using (var zipStream = new DeflaterOutputStream(cmpStream))
-                        {
-                            orgStream.CopyTo(zipStream);
-                        }
+            // callers set fresh (uncompressed) data before preparing it
+            _compressed = false;
 
-                        _compressed = true;
-                        _encodedData = cmpStream.ToArray();
+            if (compress && _encodedData != null)
+            {
+                // the zlib format is what the PDF FlateDecode filter expects
+                using (var cmpStream = new MemoryStream())
+                {
+                    using (var zipStream = new ZLibStream(cmpStream, CompressionLevel.Optimal, leaveOpen: true))
+                    {
+                        zipStream.Write(_encodedData, 0, _encodedData.Length);
                     }
+
+                    _compressed = true;
+                    _encodedData = cmpStream.ToArray();
                 }
             }
         }
@@ -80,20 +87,28 @@ namespace CorePDF
             stream.Flush();
             BytePosition = stream.BaseStream.Position;
 
+            if (stream.BaseStream is PdfOutputStream output)
+            {
+                // record where the object starts for the document's cross reference table
+                output.RecordObject(ObjectNumber, BytePosition);
+            }
+
             var comment = (string.IsNullOrEmpty(Comment) ? "" : " % " + Comment);
             var result = string.Format("{0} 0 obj{1}\n", ObjectNumber, comment);
 
-            // Add any derived keys to the object definition
+            // Add any derived keys to a copy of the object definition, so the object can be
+            // published again (eg: if the document is published more than once)
+            var pdfObject = new Dictionary<string, dynamic>(_pdfObject);
             if (_encodedData != null && _encodedData.Length > 0)
             {
-                _pdfObject.Add("/Length", _encodedData.Length.ToString()); // minus one here to exclude the newline character added to the stream
+                pdfObject["/Length"] = _encodedData.Length.ToString();
             }
             if (_compressed)
             {
-                _pdfObject.Add("/Filter", "/FlateDecode");
+                pdfObject["/Filter"] = "/FlateDecode";
             }
 
-            result += ToPDFObject(_pdfObject);
+            result += ToPDFObject(pdfObject);
 
             stream.Write(result);
             if (_encodedData != null && _encodedData.Length > 0)
