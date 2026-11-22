@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace CorePDF.Svg
@@ -21,31 +23,98 @@ namespace CorePDF.Svg
             _hasTransform = transform.HasValue && !transform.Value.IsIdentity;
         }
 
+        private double _x, _y;
+        private double _minX = double.MaxValue, _minY = double.MaxValue, _maxX = double.MinValue, _maxY = double.MinValue;
+
         /// <summary>
         /// True once anything has been drawn
         /// </summary>
         public bool HasSegments { get; private set; }
 
+        /// <summary>
+        /// The exact bounding box of the geometry (before any transform), as
+        /// [left, top, right, bottom], or null if nothing has been drawn
+        /// </summary>
+        public double[] Bounds => _minX > _maxX ? null : new[] { _minX, _minY, _maxX, _maxY };
+
         public void MoveTo(double x, double y)
         {
             Point(x, y);
             _output.Append("m\n");
+            _x = x;
+            _y = y;
         }
 
         public void LineTo(double x, double y)
         {
+            Include(_x, _y);
+            Include(x, y);
             Point(x, y);
             _output.Append("l\n");
             HasSegments = true;
+            _x = x;
+            _y = y;
         }
 
         public void CurveTo(double x1, double y1, double x2, double y2, double x, double y)
         {
+            Include(_x, _y);
+            Include(x, y);
+
+            // the curve may extend past its end points where its tangent is horizontal or vertical
+            foreach (var t in Extremes(_x, x1, x2, x).Concat(Extremes(_y, y1, y2, y)))
+            {
+                var mt = 1 - t;
+                Include(
+                    (mt * mt * mt * _x) + (3 * mt * mt * t * x1) + (3 * mt * t * t * x2) + (t * t * t * x),
+                    (mt * mt * mt * _y) + (3 * mt * mt * t * y1) + (3 * mt * t * t * y2) + (t * t * t * y));
+            }
+
             Point(x1, y1);
             Point(x2, y2);
             Point(x, y);
             _output.Append("c\n");
             HasSegments = true;
+            _x = x;
+            _y = y;
+        }
+
+        private void Include(double x, double y)
+        {
+            _minX = Math.Min(_minX, x);
+            _minY = Math.Min(_minY, y);
+            _maxX = Math.Max(_maxX, x);
+            _maxY = Math.Max(_maxY, y);
+        }
+
+        /// <summary>
+        /// The parameter values (between 0 and 1) where one co-ordinate of a cubic curve has a
+        /// turning point: the roots of its derivative
+        /// </summary>
+        private static IEnumerable<double> Extremes(double p0, double p1, double p2, double p3)
+        {
+            var a = -p0 + (3 * p1) - (3 * p2) + p3;
+            var b = 2 * (p0 - (2 * p1) + p2);
+            var c = p1 - p0;
+
+            if (Math.Abs(a) < 1e-12)
+            {
+                if (Math.Abs(b) > 1e-12)
+                {
+                    var t = -c / b;
+                    if (t > 0 && t < 1) yield return t;
+                }
+                yield break;
+            }
+
+            var discriminant = (b * b) - (4 * a * c);
+            if (discriminant < 0) yield break;
+
+            var root = Math.Sqrt(discriminant);
+            foreach (var t in new[] { (-b + root) / (2 * a), (-b - root) / (2 * a) })
+            {
+                if (t > 0 && t < 1) yield return t;
+            }
         }
 
         public void Close()

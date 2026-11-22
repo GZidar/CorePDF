@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="240" height="240" color="darkorange">
+  <defs>
+    <style>
+      .stop-a { stop-color: #1e90ff }
+      .stop-b { stop-color: #ff1493; stop-opacity: 1 }
+    </style>
+    <linearGradient id="base"><stop offset="0" class="stop-a"/><stop offset="1" class="stop-b"/></linearGradient>
+    <linearGradient id="inherits" xlink:href="#base" x1="0" y1="0" x2="0" y2="1"/>
+    <linearGradient id="rotated" href="#base" gradientTransform="rotate(45 0.5 0.5)"/>
+    <radialGradient id="radial-inherits" href="#base" r="0.7"/>
+    <linearGradient id="styled"><stop offset="0" style="stop-color:lime"/><stop offset="1" stop-color="currentColor"/></linearGradient>
+    <linearGradient id="single"><stop offset="0.5" stop-color="teal"/></linearGradient>
+    <linearGradient id="stroke" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="240" y2="0"><stop offset="0" stop-color="red"/><stop offset="1" stop-color="blue"/></linearGradient>
+  </defs>
+  <rect x="10" y="10" width="60" height="60" fill="url(#base)"/>
+  <rect x="90" y="10" width="60" height="60" fill="url(#inherits)"/>
+  <rect x="170" y="10" width="60" height="60" fill="url(#rotated)"/>
+  <circle cx="40" cy="120" r="30" fill="url(#radial-inherits)"/>
+  <rect x="90" y="90" width="60" height="60" fill="url(#styled)"/>
+  <rect x="170" y="90" width="60" height="60" fill="url(#single)"/>
+  <rect x="10" y="170" width="60" height="60" fill="url(#missing) gold"/>
+  <rect x="90" y="170" width="60" height="60" fill="url(#base)" transform="rotate(10 120 200)"/>
+  <path d="M170 180 Q200 160 230 180 T230 220" fill="none" stroke="url(#stroke)" stroke-width="8"/>
+  <ellipse cx="200" cy="225" rx="30" ry="8" fill="url(#base)" stroke="url(#inherits)" stroke-width="3"/>
+</svg>

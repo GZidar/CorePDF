@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="240" height="240">
+  <defs>
+    <radialGradient id="centred"><stop offset="0" stop-color="white"/><stop offset="1" stop-color="crimson"/></radialGradient>
+    <radialGradient id="focal" fx="0.3" fy="0.3"><stop offset="0" stop-color="#ffd"/><stop offset="0.7" stop-color="orange"/><stop offset="1" stop-color="brown"/></radialGradient>
+    <radialGradient id="small" cx="0.5" cy="0.5" r="0.3"><stop offset="0" stop-color="blue"/><stop offset="1" stop-color="cyan"/></radialGradient>
+    <radialGradient id="focal-radius" fr="0.2"><stop offset="0" stop-color="black"/><stop offset="1" stop-color="lime"/></radialGradient>
+    <radialGradient id="user" gradientUnits="userSpaceOnUse" cx="180" cy="180" r="50" fx="160" fy="170">
+      <stop offset="0" stop-color="yellow"/><stop offset="1" stop-color="purple"/>
+    </radialGradient>
+    <radialGradient id="transformed" gradientTransform="translate(0.5 0.5) scale(1 0.5) translate(-0.5 -0.5)">
+      <stop offset="0" stop-color="white"/><stop offset="1" stop-color="navy"/>
+    </radialGradient>
+  </defs>
+  <circle cx="60" cy="60" r="50" fill="url(#centred)"/>
+  <rect x="130" y="10" width="100" height="100" fill="url(#focal)"/>
+  <rect x="10" y="130" width="100" height="40" fill="url(#small)"/>
+  <rect x="10" y="180" width="100" height="50" fill="url(#transformed)"/>
+  <rect x="130" y="130" width="100" height="100" fill="url(#user)"/>
+  <ellipse cx="60" cy="150" rx="0" ry="0" fill="url(#focal-radius)"/>
+  <circle cx="200" cy="60" r="0.1" fill="url(#focal-radius)"/>
+</svg>

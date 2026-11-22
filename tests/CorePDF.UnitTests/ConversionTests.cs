@@ -134,7 +134,7 @@ namespace CorePDF.UnitTests
         [Theory]
         [InlineData("<text x='0' y='10'>Hello</text>", "text")]
         [InlineData("<image href='a.png' width='10' height='10'/>", "image")]
-        [InlineData("<linearGradient id='g'/><rect width='10' height='10' fill='url(#g)'/>", "gradients")]
+        [InlineData("<pattern id='p'/><rect width='10' height='10' fill='url(#p)'/>", "patterns")]
         [InlineData("<mask id='m'/><rect width='10' height='10' mask='url(#m)'/>", "masks")]
         [InlineData("<filter id='f'/><rect width='10' height='10' filter='url(#f)'/>", "filters")]
         [InlineData("<marker id='m'/><path d='M0 0 L10 10' stroke='black' marker-end='url(#m)'/>", "markers")]
@@ -143,6 +143,98 @@ namespace CorePDF.UnitTests
             var ex = Assert.Throws<NotSupportedException>(() => Convert(contents));
 
             Assert.Contains(feature, ex.Message);
+        }
+
+        [Fact]
+        public void LinearGradient_IsAnAxialShadingPattern()
+        {
+            var drawing = Convert(@"<linearGradient id='g'><stop offset='0' stop-color='red'/><stop offset='1' stop-color='blue'/></linearGradient>
+                <rect x='10' y='20' width='100' height='50' fill='url(#g)'/>");
+
+            Assert.Contains("/Pattern cs /P1 scn\n", drawing.Content);
+            var pattern = Assert.Single(drawing.Patterns);
+            Assert.Contains("/ShadingType 2", pattern);
+            Assert.Contains("/Coords [0 0 1 0]", pattern);
+            Assert.Contains("/C0 [1 0 0] /C1 [0 0 1]", pattern);
+            // bounding box units map the gradient onto the rectangle (in a y-flipped 1000 high viewBox)
+            Assert.Contains("/Matrix [100 0 0 -50 10 980]", pattern);
+            Assert.Empty(drawing.Forms);
+        }
+
+        [Fact]
+        public void RadialGradient_IsARadialShadingPattern()
+        {
+            var drawing = Convert(@"<radialGradient id='g' fx='0.25'><stop offset='0' stop-color='white'/><stop offset='1' stop-color='black'/></radialGradient>
+                <circle cx='50' cy='50' r='50' fill='url(#g)'/>");
+
+            var pattern = Assert.Single(drawing.Patterns);
+            Assert.Contains("/ShadingType 3", pattern);
+            Assert.Contains("/Coords [0.25 0.5 0 0.5 0.5 0.5]", pattern);
+        }
+
+        [Fact]
+        public void GradientStops_OutsideZeroToOne_KeepTheirEndColours()
+        {
+            var drawing = Convert(@"<linearGradient id='g'><stop offset='0.25' stop-color='red'/><stop offset='0.75' stop-color='blue'/></linearGradient>
+                <rect width='10' height='10' fill='url(#g)'/>");
+
+            // red until the first stop, then red to blue, then blue after the last stop
+            var pattern = Assert.Single(drawing.Patterns);
+            Assert.Contains("/C0 [1 0 0] /C1 [1 0 0]", pattern);
+            Assert.Contains("/C0 [1 0 0] /C1 [0 0 1]", pattern);
+            Assert.Contains("/C0 [0 0 1] /C1 [0 0 1]", pattern);
+            Assert.Contains("/Bounds [0.25 0.75]", pattern);
+        }
+
+        [Fact]
+        public void GradientWithVaryingOpacity_UsesASoftMask()
+        {
+            var drawing = Convert(@"<linearGradient id='g'><stop offset='0' stop-color='red'/><stop offset='1' stop-color='red' stop-opacity='0'/></linearGradient>
+                <rect width='10' height='10' fill='url(#g)'/>");
+
+            var mask = Assert.Single(drawing.Forms);
+            Assert.Contains("/CS /DeviceGray", mask.Group);
+            Assert.Contains("/Sh1 sh", mask.Content);
+            Assert.Contains("/ColorSpace /DeviceGray", Assert.Single(drawing.Shadings));
+            Assert.Contains(drawing.GraphicsStates, g => g.Contains("/SMask << /Type /Mask /S /Luminosity /G {Fm1} >>"));
+        }
+
+        [Fact]
+        public void GradientWithUniformOpacity_UsesConstantOpacity()
+        {
+            var drawing = Convert(@"<linearGradient id='g'><stop offset='0' stop-color='red' stop-opacity='0.5'/><stop offset='1' stop-color='blue' stop-opacity='0.5'/></linearGradient>
+                <rect width='10' height='10' fill='url(#g)'/>");
+
+            Assert.Empty(drawing.Forms);
+            Assert.Contains(drawing.GraphicsStates, g => g.Contains("/ca 0.5"));
+        }
+
+        [Theory]
+        [InlineData("<linearGradient id='g'><stop offset='0' stop-color='red'/></linearGradient>", "1 0 0 rg")] // a single stop
+        [InlineData("<linearGradient id='g' x2='0'><stop offset='0' stop-color='red'/><stop offset='1' stop-color='blue'/></linearGradient>", "0 0 1 rg")] // no length: the last stop
+        [InlineData("<radialGradient id='g' r='0'><stop offset='0' stop-color='red'/><stop offset='1' stop-color='lime'/></radialGradient>", "0 1 0 rg")] // no radius: the last stop
+        public void GradientsThatCantVary_AreSolid(string gradient, string expected)
+        {
+            var drawing = Convert(gradient + "<rect width='10' height='10' fill='url(#g)'/>");
+
+            Assert.Contains(expected, drawing.Content);
+            Assert.Empty(drawing.Patterns);
+        }
+
+        [Fact]
+        public void GradientWithNoStops_PaintsNothing()
+        {
+            var drawing = Convert("<linearGradient id='g'/><rect width='10' height='10' fill='url(#g)'/>");
+
+            Assert.DoesNotContain(" re", drawing.Content);
+            Assert.DoesNotContain(" f\n", drawing.Content);
+        }
+
+        [Fact]
+        public void MissingPaintReference_UsesTheFallbackColour()
+        {
+            Assert.Contains("0 0 1 rg", Convert("<rect width='10' height='10' fill='url(#missing) blue'/>").Content);
+            Assert.DoesNotContain(" rg", Convert("<rect width='10' height='10' fill='url(#missing)'/>").Content);
         }
 
         [Fact]

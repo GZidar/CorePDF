@@ -29,6 +29,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\CorePDF.IntegrationTests\Svg\Corpus\gradient-opacity.svg" Link="assets\gradient-opacity.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\CorePDF.IntegrationTests\Svg\Corpus\gradient-spread.svg" Link="assets\gradient-spread.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\CorePDF.IntegrationTests\Svg\Corpus\opacity.svg" Link="assets\opacity.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
