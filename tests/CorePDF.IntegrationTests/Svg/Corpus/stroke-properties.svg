@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="220">
+  <path d="M20 20 L100 20" stroke="black" stroke-width="12" stroke-linecap="butt"/>
+  <path d="M20 45 L100 45" stroke="black" stroke-width="12" stroke-linecap="round"/>
+  <path d="M20 70 L100 70" stroke="black" stroke-width="12" stroke-linecap="square"/>
+  <path d="M130 40 L160 10 L190 40" fill="none" stroke="navy" stroke-width="10" stroke-linejoin="miter"/>
+  <path d="M130 80 L160 50 L190 80" fill="none" stroke="navy" stroke-width="10" stroke-linejoin="round"/>
+  <path d="M130 120 L160 90 L190 120" fill="none" stroke="navy" stroke-width="10" stroke-linejoin="bevel"/>
+  <path d="M20 120 L60 110 L20 100" fill="none" stroke="green" stroke-width="6" stroke-miterlimit="1"/>
+  <path d="M20 160 L200 160" stroke="purple" stroke-width="4" stroke-dasharray="10 5"/>
+  <path d="M20 180 L200 180" stroke="purple" stroke-width="4" stroke-dasharray="15,5,5" stroke-dashoffset="7"/>
+  <circle cx="110" cy="205" r="10" fill="none" stroke="orange" stroke-width="3" stroke-dasharray="4"/>
+</svg>

@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="110">
+  <path d="M50 5 L21 95 L97 37 L3 37 L79 95 Z" fill="crimson" fill-rule="nonzero"/>
+  <path d="M160 5 L131 95 L207 37 L113 37 L189 95 Z" fill="crimson" fill-rule="evenodd"/>
+</svg>

@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200">
+  <defs>
+    <style>
+      .cls-1 { fill: #231f20; }
+      .cls-2, .accent { fill: tomato; stroke: #333; stroke-width: 4px }
+      rect.wide { fill: steelblue }
+      #special { fill: gold; }
+      circle { stroke: black; stroke-width: 2 }
+      /* a comment */
+    </style>
+  </defs>
+  <path class="cls-1" d="M10 10 h60 v60 h-60z"/>
+  <rect class="cls-2" x="90" y="10" width="60" height="60"/>
+  <rect class="wide" x="10" y="90" width="140" height="30"/>
+  <circle id="special" cx="170" cy="40" r="20" fill="red"/>
+  <circle class="accent" cx="50" cy="160" r="25" style="fill:lime"/>
+  <ellipse class="cls-1 accent" cx="140" cy="160" rx="40" ry="20"/>
+</svg>

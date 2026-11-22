@@ -1,9 +1,9 @@
 using CorePDF.Embeds;
+using CorePDF.Svg;
 using CorePDF.Pages;
 using CorePDF.TypeFaces;
 using System.Collections.Generic;
 using System.Text;
-using System.Text.Json;
 using System;
 
 namespace CorePDF.Contents
@@ -27,8 +27,8 @@ namespace CorePDF.Contents
         public override void PrepareStream(PageRoot pageRoot, Size pageSize, List<Font> fonts, bool compress)
         {
             var imageFile = pageRoot.Document.GetImage(ImageName);
-            if (imageFile == null || imageFile.ByteData == null) return;
-            var result = "";
+            if (imageFile == null || !imageFile.IsPublished) return;
+            string result;
 
             // the area covered by the image, for any hyperlink
             var linkWidth = Height > 0 && Width > 0 ? Width : imageFile.Width * ScaleFactor;
@@ -40,6 +40,7 @@ namespace CorePDF.Contents
 
             if (imageFile.Type != ImageFile.PATHDATA)
             {
+                // images are drawn in a 1 x 1 unit square, so scale that to the image's size
                 result = "q\n";
                 if (Height > 0 && Width > 0)
                 {
@@ -53,46 +54,15 @@ namespace CorePDF.Contents
                 }
                 result += string.Format("/{0} Do\n", imageFile.Id);
                 result += "Q";
-
             }
             else
             {
-                // Need to rehydrate the path information 
-                var tokens = JsonSerializer.Deserialize<TokenisedSVG>(imageFile.ByteData);
-
-                foreach (var path in tokens.Paths)
-                {
-                    if (path.Parameters == null)
-                    {
-                        result += path.Command;
-                    }
-                    else
-                    {
-                        var parms = new object[path.Parameters.Count];
-                        var count = 0;
-
-                        foreach (var parm in path.Parameters)
-                        {
-                            parms[count] = Math.Round(parm.Value,5);
-
-                            if (parm.Operation.Contains("*scale"))
-                            {
-                                parms[count] = (decimal)parms[count] * ScaleFactor;
-                            }
-                            if (parm.Operation.Contains("+offsetX"))
-                            {
-                                parms[count] = (decimal)parms[count] + PosX;
-                            }
-                            if (parm.Operation.Contains("+offsetY"))
-                            {
-                                parms[count] = (decimal)parms[count] + PosY;
-                            }
-                            count++;
-                        }
-
-                        result += string.Format(path.Command, parms);
-                    }
-                }
+                // SVG drawings are at their natural size, so scale them to the size required
+                var drawing = imageFile.Drawing;
+                var scaleX = Height > 0 && Width > 0 ? Width / drawing.Width : (double)ScaleFactor;
+                var scaleY = Height > 0 && Width > 0 ? Height / drawing.Height : (double)ScaleFactor;
+                result = string.Format("q\n{0} 0 0 {1} {2} {3} cm\n/{4} Do\nQ",
+                    SvgNumber.Format(scaleX), SvgNumber.Format(scaleY), PosX, PosY, imageFile.Id);
             }
 
             _encodedData = Encoding.UTF8.GetBytes(result);
