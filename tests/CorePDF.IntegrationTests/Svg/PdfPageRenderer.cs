@@ -10,8 +10,9 @@ namespace CorePDF.IntegrationTests.Svg
     /// <summary>
     /// Draws the vector graphics of a PDF page with SkiaSharp, so the output can be compared with
     /// a reference rendering. It understands the path, colour, graphics state, transparency,
-    /// shading pattern, soft mask and form XObject operators CorePDF writes; text and images are
-    /// ignored.
+    /// shading pattern, soft mask, text and form XObject operators CorePDF writes. Text is drawn
+    /// from embedded (Type0) fonts using the font program in the document; text in the standard
+    /// fonts and images are ignored.
     /// </summary>
     internal sealed class PdfPageRenderer
     {
@@ -37,6 +38,9 @@ namespace CorePDF.IntegrationTests.Svg
             public SKPath Clip;
             public Dictionary<string, object> SoftMask;
             public SKMatrix SoftMaskMatrix;
+            public string FontName;
+            public float FontSize;
+            public int RenderingMode;
 
             public GraphicsState Clone()
             {
@@ -108,6 +112,7 @@ namespace CorePDF.IntegrationTests.Svg
             var operands = new List<object>();
             var path = new SKPath();
             var clipPending = (SKPathFillType?)null;
+            var textMatrix = SKMatrix.Identity;
 
             foreach (var token in Tokenise(content))
             {
@@ -162,6 +167,13 @@ namespace CorePDF.IntegrationTests.Svg
                     case "b*": path.Close(); Paint(path, state, context, SKPathFillType.EvenOdd, fill: true, stroke: true); break;
                     case "n": break;
                     case "sh": DrawShading(context, (string)operands[0], state); break;
+                    case "BT": textMatrix = SKMatrix.Identity; break;
+                    case "Tf": state.FontName = (string)operands[0]; state.FontSize = N(1); break;
+                    case "Tr": state.RenderingMode = (int)N(0); break;
+                    case "Tm": textMatrix = new SKMatrix(N(0), N(2), N(4), N(1), N(3), N(5), 0, 0, 1); break;
+                    case "Td": textMatrix = SKMatrix.Concat(textMatrix, SKMatrix.CreateTranslation(N(0), N(1))); break;
+                    case "Tj": DrawText(context, state, new List<object> { operands[0] }, ref textMatrix); break;
+                    case "TJ": DrawText(context, state, (List<object>)operands[0], ref textMatrix); break;
                     case "Do": DrawXObject(context, (string)operands[0], state); break;
                 }
 
@@ -198,7 +210,7 @@ namespace CorePDF.IntegrationTests.Svg
                 if (fill)
                 {
                     using var paint = new SKPaint { IsAntialias = true, Style = SKPaintStyle.Fill, Color = state.Fill.WithAlpha(B(state.FillAlpha)) };
-                    if (state.FillPattern != null) paint.Shader = PatternShader(context, state.FillPattern, state, state.FillAlpha);
+                    if (state.FillPattern != null) paint.Shader = PatternShader(context, state.FillPattern, state.Ctm, state.FillAlpha);
                     _canvas.DrawPath(path, paint);
                 }
                 if (stroke)
@@ -213,7 +225,7 @@ namespace CorePDF.IntegrationTests.Svg
                         StrokeJoin = state.Join,
                         StrokeMiter = state.MiterLimit
                     };
-                    if (state.StrokePattern != null) paint.Shader = PatternShader(context, state.StrokePattern, state, state.StrokeAlpha);
+                    if (state.StrokePattern != null) paint.Shader = PatternShader(context, state.StrokePattern, state.Ctm, state.StrokeAlpha);
                     if (state.Dash != null)
                     {
                         paint.PathEffect = SKPathEffect.CreateDash(state.Dash.Length % 2 == 0 ? state.Dash : Repeat(state.Dash), state.DashPhase);
@@ -278,13 +290,13 @@ namespace CorePDF.IntegrationTests.Svg
         /// system of the form it is used in, while the shader works relative to the current
         /// transformation matrix (which the canvas is set to).
         /// </summary>
-        private SKShader PatternShader(Context context, string name, GraphicsState state, float alpha)
+        private SKShader PatternShader(Context context, string name, SKMatrix current, float alpha)
         {
             var pattern = Dict(Resource(context, "Pattern", name));
             var matrix = pattern.TryGetValue("Matrix", out var m) ? Floats(m) : new float[] { 1, 0, 0, 1, 0, 0 };
             var patternMatrix = new SKMatrix(matrix[0], matrix[2], matrix[4], matrix[1], matrix[3], matrix[5], 0, 0, 1);
 
-            state.Ctm.TryInvert(out var inverse);
+            current.TryInvert(out var inverse);
             var local = SKMatrix.Concat(inverse, SKMatrix.Concat(context.FormBase, patternMatrix));
             return Shader(Dict(pattern["Shading"]), local, alpha);
         }
@@ -365,6 +377,112 @@ namespace CorePDF.IntegrationTests.Svg
 
         #endregion
 
+        #region Text
+
+        private sealed class LoadedFont
+        {
+            public SKTypeface Typeface;
+            public Dictionary<int, float> Widths = new Dictionary<int, float>();
+            public float DefaultWidth = 1000;
+        }
+
+        private readonly Dictionary<int, LoadedFont> _fonts = new Dictionary<int, LoadedFont>();
+
+        /// <summary>
+        /// Loads an embedded composite font: its glyph widths and its (TrueType) font program
+        /// </summary>
+        private LoadedFont LoadFont(Context context, string name)
+        {
+            var reference = (PdfReference)Resource(context, "Font", name);
+            if (_fonts.TryGetValue(reference.Number, out var loaded)) return loaded;
+
+            var font = Dict(reference);
+            if (((PdfName)font["Subtype"]).Value != "Type0")
+            {
+                _fonts[reference.Number] = null;
+                return null;
+            }
+
+            var cidFont = Dict(((List<object>)font["DescendantFonts"])[0]);
+            var descriptor = Dict(cidFont["FontDescriptor"]);
+            var program = _pdf.Objects[((PdfReference)descriptor["FontFile2"]).Number].Stream;
+
+            loaded = new LoadedFont { Typeface = SKTypeface.FromData(SKData.CreateCopy(program)) };
+            if (cidFont.TryGetValue("DW", out var dw)) loaded.DefaultWidth = F(dw);
+            if (cidFont.TryGetValue("W", out var w))
+            {
+                var widths = (List<object>)w;
+                for (var i = 0; i < widths.Count;)
+                {
+                    var first = (int)F(widths[i]);
+                    if (widths[i + 1] is List<object> list)
+                    {
+                        for (var j = 0; j < list.Count; j++) loaded.Widths[first + j] = F(list[j]);
+                        i += 2;
+                    }
+                    else
+                    {
+                        for (var g = first; g <= (int)F(widths[i + 1]); g++) loaded.Widths[g] = F(widths[i + 2]);
+                        i += 3;
+                    }
+                }
+            }
+
+            _fonts[reference.Number] = loaded;
+            return loaded;
+        }
+
+        /// <summary>
+        /// Draws text shown with Tj or TJ. Glyphs are drawn as their outlines, filled and/or
+        /// stroked according to the text rendering mode.
+        /// </summary>
+        private void DrawText(Context context, GraphicsState state, List<object> items, ref SKMatrix textMatrix)
+        {
+            var font = LoadFont(context, state.FontName);
+            var size = state.FontSize;
+            var x = 0f;
+            var outline = new SKPath();
+
+            using var skFont = font == null ? null : new SKFont(font.Typeface, size);
+            foreach (var item in items)
+            {
+                if (item is double adjustment)
+                {
+                    x -= (float)adjustment / 1000 * size;
+                }
+                else if (item is byte[] bytes && font != null)
+                {
+                    for (var i = 0; i + 1 < bytes.Length; i += 2)
+                    {
+                        var gid = (ushort)((bytes[i] << 8) | bytes[i + 1]);
+                        using var glyph = skFont.GetGlyphPath(gid);
+                        if (glyph != null)
+                        {
+                            // glyph outlines have y going down; text space has y going up
+                            glyph.Transform(SKMatrix.Concat(SKMatrix.CreateTranslation(x, 0), SKMatrix.CreateScale(1, -1)));
+                            outline.AddPath(glyph);
+                        }
+                        x += (font.Widths.TryGetValue(gid, out var width) ? width : font.DefaultWidth) / 1000 * size;
+                    }
+                }
+            }
+
+            var mode = state.RenderingMode;
+            if (font != null && mode != 3 && mode != 7)
+            {
+                var current = SKMatrix.Concat(state.Ctm, textMatrix);
+                var textState = state.Clone();
+                textState.Ctm = current;
+                var fill = mode == 0 || mode == 2 || mode == 4 || mode == 6;
+                var stroke = mode == 1 || mode == 2 || mode == 5 || mode == 6;
+                Paint(outline, textState, context, SKPathFillType.Winding, fill, stroke);
+            }
+
+            textMatrix = SKMatrix.Concat(textMatrix, SKMatrix.CreateTranslation(x, 0));
+        }
+
+        #endregion
+
         private void DrawXObject(Context context, string name, GraphicsState state)
         {
             var reference = (PdfReference)Resource(context, "XObject", name);
@@ -407,6 +525,13 @@ namespace CorePDF.IntegrationTests.Svg
             public string Name;
         }
 
+        /// <summary>
+        /// A literal string (only used for text in the standard fonts, which isn't drawn)
+        /// </summary>
+        private sealed class LiteralString
+        {
+        }
+
         private static IEnumerable<object> Tokenise(string content)
         {
             var stack = new Stack<List<object>>();
@@ -444,13 +569,15 @@ namespace CorePDF.IntegrationTests.Svg
                         else if (content[i] == ')') depth--;
                         i++;
                     } while (depth > 0);
-                    token = 0.0;
+                    token = new LiteralString();
                 }
                 else if (c == '<' && i + 1 < content.Length && content[i + 1] != '<')
                 {
+                    var start = ++i;
                     while (content[i] != '>') i++;
+                    var hex = content.Substring(start, i - start);
                     i++;
-                    token = 0.0;
+                    token = Convert.FromHexString(hex.Length % 2 == 0 ? hex : hex + "0");
                 }
                 else if (c == '/')
                 {

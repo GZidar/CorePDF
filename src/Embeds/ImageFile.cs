@@ -86,13 +86,21 @@ namespace CorePDF.Embeds
 
         public void EmbedFile()
         {
+            EmbedFile(null);
+        }
+
+        /// <summary>
+        /// Loads the image. The document's fonts are needed to draw any text in SVG images.
+        /// </summary>
+        internal void EmbedFile(IReadOnlyList<TypeFaces.Font> fonts)
+        {
             using (new InvariantCultureScope())
             {
-                EmbedFileCore();
+                EmbedFileCore(fonts);
             }
         }
 
-        private void EmbedFileCore()
+        private void EmbedFileCore(IReadOnlyList<TypeFaces.Font> fonts)
         {
             // do nothing if there is no valid file or file data specified
             if (FileData == null && (string.IsNullOrEmpty(FilePath) || !File.Exists(FilePath))) return;
@@ -119,7 +127,7 @@ namespace CorePDF.Embeds
             }
 
             // SVG images are converted to PDF drawing operations, so they stay sharp at any size
-            _drawing = SvgConverter.Convert(data);
+            _drawing = SvgConverter.Convert(data, fonts);
             Type = PATHDATA;
             Width = (int)Math.Round(_drawing.Width);
             Height = (int)Math.Round(_drawing.Height);

@@ -53,6 +53,21 @@ namespace CorePDF.TypeFaces
         public List<int> Metrics { get; set; }
 
         /// <summary>
+        /// The height of the font above the baseline, in thousandths of the font size
+        /// </summary>
+        internal virtual int Ascent { get; set; } = 800;
+
+        /// <summary>
+        /// The depth of the font below the baseline (a negative number), in thousandths of the font size
+        /// </summary>
+        internal virtual int Descent { get; set; } = -200;
+
+        /// <summary>
+        /// The height of lower case letters, in thousandths of the font size
+        /// </summary>
+        internal virtual int XHeight { get; set; } = 500;
+
+        /// <summary>
         /// Set when text has been written using this font. Only fonts that are used are
         /// included in the document.
         /// </summary>

@@ -29,6 +29,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <None Include="..\CorePDF.IntegrationTests\Svg\Corpus\text-basic.svg" Link="assets\text-basic.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="..\CorePDF.IntegrationTests\Svg\Corpus\text-gradient.svg" Link="assets\text-gradient.svg">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Include="..\CorePDF.IntegrationTests\Svg\Corpus\gradient-opacity.svg" Link="assets\gradient-opacity.svg">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>

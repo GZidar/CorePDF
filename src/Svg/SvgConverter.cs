@@ -1,3 +1,4 @@
+using CorePDF.TypeFaces;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -58,6 +59,11 @@ namespace CorePDF.Svg
         public List<string> Shadings { get; } = new List<string>();
 
         /// <summary>
+        /// The document fonts used for text
+        /// </summary>
+        public List<Font> Fonts { get; } = new List<Font>();
+
+        /// <summary>
         /// The resources dictionary shared by the drawing and its forms. Dictionaries refer to
         /// forms as {FmN}, which are replaced with references to the form objects.
         /// </summary>
@@ -67,6 +73,16 @@ namespace CorePDF.Svg
             Section(result, "ExtGState", "GS", GraphicsStates);
             Section(result, "Pattern", "P", Patterns);
             Section(result, "Shading", "Sh", Shadings);
+
+            if (Fonts.Count > 0)
+            {
+                result.Append(" /Font <<");
+                foreach (var font in Fonts)
+                {
+                    result.AppendFormat(" /{0} {1} 0 R", font.Id, font.ObjectNumber);
+                }
+                result.Append(" >>");
+            }
 
             if (Forms.Count > 0)
             {
@@ -109,7 +125,7 @@ namespace CorePDF.Svg
     /// Elements that can't be drawn correctly yet (text, images, gradients, patterns, masks,
     /// filters and markers) cause a NotSupportedException rather than being drawn wrongly.
     /// </summary>
-    internal sealed class SvgConverter
+    internal sealed partial class SvgConverter
     {
         private const int MAXDEPTH = 64;
 
@@ -118,6 +134,13 @@ namespace CorePDF.Svg
         private readonly SvgDrawing _drawing = new SvgDrawing();
         private readonly Dictionary<string, int> _graphicsStates = new Dictionary<string, int>();
         private int _depth;
+        private readonly IReadOnlyList<Font> _fonts;
+        private readonly List<Font> _usedFonts = new List<Font>();
+
+        private SvgConverter(IReadOnlyList<Font> fonts)
+        {
+            _fonts = fonts;
+        }
 
         /// <summary>
         /// The co-ordinate system of the form currently being written (relative to the image),
@@ -134,7 +157,9 @@ namespace CorePDF.Svg
             return start.Contains("<svg");
         }
 
-        public static SvgDrawing Convert(byte[] data)
+        /// <param name="data">the SVG file</param>
+        /// <param name="fonts">the document's fonts, used for text (text isn't supported without them)</param>
+        public static SvgDrawing Convert(byte[] data, IReadOnlyList<Font> fonts = null)
         {
             XDocument document;
             try
@@ -156,7 +181,11 @@ namespace CorePDF.Svg
                 throw new InvalidDataException("The file is not an SVG image.");
             }
 
-            return new SvgConverter().ConvertRoot(root);
+            var converter = new SvgConverter(fonts);
+            var drawing = converter.ConvertRoot(root);
+
+            drawing.Fonts.AddRange(converter._usedFonts);
+            return drawing;
         }
 
         private SvgDrawing ConvertRoot(XElement root)
@@ -250,11 +279,11 @@ namespace CorePDF.Svg
                 case "line":
                 case "polyline":
                 case "polygon":
-                    break;
                 case "text":
+                    break;
                 case "image":
                 case "foreignObject":
-                    throw new NotSupportedException($"SVG <{name}> elements are not supported yet. Convert text to paths (outlines) before using the image.");
+                    throw new NotSupportedException($"SVG <{name}> elements are not supported yet.");
                 default:
                     // definitions, metadata, styles and anything unknown aren't drawn directly
                     return;
@@ -332,6 +361,9 @@ namespace CorePDF.Svg
                         break;
                     case "use":
                         RenderUse(element, style, target, inner, viewport);
+                        break;
+                    case "text":
+                        RenderText(element, style.Visible ? leafStyle : null, target, inner, viewport);
                         break;
                     default:
                         RenderShape(element, name, style.Visible ? leafStyle : null, target, inner, viewport);
